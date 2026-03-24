@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM — Auction Houses</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF8;--bg2:#F4F3F0;--card:#FFFFFF;--border:#E8E6E1;--border2:#D4D1CA;
+  --t1:#1C1917;--t2:#57534E;--t3:#A8A29E;--navy:#1E293B;
+  --green:#166534;--green-bg:#EAF3DE;--blue:#1D4ED8;--blue-bg:#E6F1FB;
+  --purple:#6D28D9;--purple-bg:#EEEDFE;--amber:#B45309;--amber-bg:#FAEEDA;
+  --red:#B91C1C;--red-bg:#FCEBEB;--gray:#78716C;--gray-bg:#F1EFE8;
+  --r:8px;--rl:12px;--sh:0 1px 2px rgba(0,0,0,0.04);--shm:0 4px 16px rgba(0,0,0,0.06);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+
+/* AUTH */
+.auth{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+.auth.hidden{opacity:0;pointer-events:none}
+.auth-box{text-align:center;width:320px}
+.auth-box h1{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:6px}
+.auth-box p{font-size:13px;color:var(--t3);margin-bottom:28px}
+.auth-box .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--t3);margin-bottom:24px}
+.auth-input{width:100%;font-family:'Outfit',sans-serif;font-size:14px;padding:12px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg2);color:var(--t1);outline:none;text-align:center;letter-spacing:2px}
+.auth-input:focus{border-color:var(--navy)}
+.auth-err{font-size:12px;color:var(--red);margin-top:10px;height:18px}
+
+/* APP */
+.app{opacity:0;pointer-events:none;transition:opacity .3s}
+.app.on{opacity:1;pointer-events:auto}
+
+/* HEADER */
+.hdr{padding:24px 32px 16px;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:space-between}
+.hdr-left .brand{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--t3)}
+.hdr-left h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;letter-spacing:-.5px;margin-top:2px}
+.hdr-left h1 em{font-style:normal;color:var(--amber)}
+.hdr-actions{display:flex;gap:6px}
+.btn-g{font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;padding:6px 14px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--t2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.btn-g:hover{border-color:var(--border2);color:var(--t1)}
+.btn-p{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:7px 18px;border-radius:16px;border:none;background:var(--navy);color:#fff;cursor:pointer;transition:all .15s}
+.btn-p:hover{background:#334155}
+
+/* ALERT BAR */
+.alert-bar{padding:10px 32px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;border-bottom:1px solid var(--border);background:var(--card)}
+.alert-item{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:12px;font-weight:500}
+.alert-item.urgent{background:var(--red-bg);color:var(--red)}
+.alert-item.warn{background:var(--amber-bg);color:var(--amber)}
+.alert-item.ok{background:var(--green-bg);color:var(--green)}
+.alert-item.info{background:var(--blue-bg);color:var(--blue)}
+
+/* TOOLBAR */
+.tb{display:flex;align-items:center;gap:8px;padding:14px 32px;flex-wrap:wrap}
+.pill{font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--t3);cursor:pointer;transition:all .15s}
+.pill:hover{color:var(--t2);border-color:var(--border2)}
+.pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.srch{flex:1;min-width:160px;position:relative}
+.srch input{width:100%;font-family:'Outfit',sans-serif;font-size:12px;padding:7px 12px 7px 30px;border-radius:16px;border:1px solid var(--border);background:var(--bg2);color:var(--t1);outline:none}
+.srch input:focus{border-color:var(--navy)}
+.srch input::placeholder{color:var(--t3)}
+.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--t3)}
+.vbtn{width:32px;height:32px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.vbtn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* VIEWS */
+.vpanel{display:none;padding:0 32px 32px}
+.vpanel.on{display:block}
+
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.kcol{background:var(--bg2);border-radius:var(--rl);padding:10px;min-height:200px}
+.kcol-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px}
+.kcol-title{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.kcol-count{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.kcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.kcard:hover{border-color:var(--border2);box-shadow:var(--shm);transform:translateY(-1px)}
+.kcard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:3px}
+.kcard-loc{font-size:11px;color:var(--t2);margin-bottom:6px}
+.kcard-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.kcard-badge{font-size:9px;font-weight:600;padding:2px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:.3px}
+.kcard-next{border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
+.kcard-next-label{font-size:10px;color:var(--t3)}
+.kcard-next-action{font-size:12px;font-weight:500;margin-top:2px}
+.kcard-next-date{font-size:11px;margin-top:1px}
+.kcard-next-date.overdue{color:var(--red);font-weight:600}
+.kcard-next-date.upcoming{color:var(--t3)}
+.kcard-rev{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--green);margin-top:6px}
+.kcard-note{font-size:11px;color:var(--t3);font-style:italic;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* BOTTOM ZONE (Refused + Dormant) */
+.bottom-zone{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bz-section{background:var(--bg2);border-radius:var(--rl);padding:12px}
+.bz-title{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.bz-cards{display:flex;flex-wrap:wrap;gap:8px}
+.bz-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all .15s;min-width:180px;flex:1}
+.bz-card:hover{border-color:var(--border2);box-shadow:var(--shm)}
+.bz-card-name{font-weight:600;font-size:13px;margin-bottom:2px}
+.bz-card-detail{font-size:11px;color:var(--t2)}
+.bz-card-reason{font-size:11px;color:var(--red);margin-top:4px}
+.bz-card-relance{font-size:11px;color:var(--amber);margin-top:2px}
+.bz-empty{font-size:12px;color:var(--t3);padding:16px;text-align:center}
+
+/* MAP */
+.map-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);height:520px;overflow:hidden;box-shadow:var(--sh)}
+.map-wrap .leaflet-container{height:100%;width:100%;border-radius:var(--rl)}
+.map-popup-name{font-family:'Playfair Display',serif;font-weight:700;font-size:14px;margin-bottom:4px}
+.map-popup-detail{font-family:'Outfit',sans-serif;font-size:12px;color:var(--t2);line-height:1.6}
+.map-popup-detail strong{color:var(--t1)}
+.map-popup-btn{font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;margin-top:8px;padding:5px 14px;border-radius:10px;border:none;background:var(--navy);color:#fff;cursor:pointer}
+
+/* LIST */
+.ltable{width:100%;border-collapse:collapse;font-size:12px}
+.ltable th{text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);padding:8px 10px;border-bottom:2px solid var(--border)}
+.ltable td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ltable tr:hover{background:var(--bg2);cursor:pointer}
+.ltable tr:last-child td{border-bottom:none}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(28,25,23,.3);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.mo-box{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);padding:28px;width:580px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.1);animation:mIn .2s ease-out}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.mo-box h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:20px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;font-family:'Outfit',sans-serif;font-size:13px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg2);color:var(--t1);outline:none;transition:border-color .2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--navy)}
+.fg textarea{resize:vertical;min-height:50px}
+.fg select{cursor:pointer}
+.frow{display:grid;gap:10px}
+.frow2{grid-template-columns:1fr 1fr}
+.frow3{grid-template-columns:1fr 1fr 1fr}
+.fsep{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--t3);margin:16px 0 10px;padding-top:12px;border-top:1px solid var(--border)}
+.mo-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)}
+.mo-foot .btn-del{margin-right:auto;font-family:'Outfit',sans-serif;font-size:11px;padding:8px 14px;border-radius:var(--r);border:1px solid var(--red-bg);background:transparent;color:var(--red);cursor:pointer}
+.mo-foot .btn-del:hover{background:var(--red-bg)}
+.btn-cancel{font-family:'Outfit',sans-serif;font-size:12px;padding:8px 18px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--t2);cursor:pointer}
+.btn-save{font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:8px 20px;border-radius:var(--r);border:none;background:var(--navy);color:#fff;cursor:pointer}
+
+/* CSV MODAL */
+.csv-drop{border:2px dashed var(--border);border-radius:var(--r);padding:32px 16px;text-align:center;cursor:pointer;transition:all .2s}
+.csv-drop:hover,.csv-drop.over{border-color:var(--navy);background:rgba(30,41,59,.03)}
+.csv-drop p{font-size:13px;color:var(--t2);margin-top:8px}
+.csv-drop span{font-size:11px;color:var(--t3)}
+.csv-result{margin-top:16px;padding:12px;background:var(--green-bg);border-radius:var(--r);font-size:13px;color:var(--green);font-weight:500}
+.csv-result.err{background:var(--red-bg);color:var(--red)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:var(--r);font-size:12px;font-weight:500;color:#fff;background:var(--navy);box-shadow:var(--shm);transform:translateY(60px);opacity:0;transition:all .3s;z-index:200}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{background:var(--red)}
+
+@media(max-width:900px){.kanban{grid-template-columns:1fr 1fr}.bottom-zone{grid-template-columns:1fr}}
+@media(max-width:640px){.hdr,.alert-bar,.tb,.vpanel{padding-left:16px;padding-right:16px}.kanban{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="auth" id="auth">
+  <div class="auth-box">
+    <div class="brand">ThePackengers</div>
+    <h1 style="font-family:'Playfair Display',serif">Auction Houses</h1>
+    <p>CRM — Restricted access</p>
+    <input type="password" class="auth-input" id="auth-pw" placeholder="• • • • • •" autofocus>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="brand">ThePackengers</div>
+      <h1>Auction <em>Houses</em></h1>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn-g" id="btn-csv-open">↑ Import CSV</button>
+      <button class="btn-g" id="btn-export">↓ Export</button>
+      <label class="btn-g">↑ Import JSON<input type="file" id="btn-json-import" accept=".json" style="display:none"></label>
+      <button class="btn-p" id="btn-add">+ New</button>
+    </div>
+  </div>
+
+  <div class="alert-bar" id="alerts"></div>
+
+  <div class="tb">
+    <div style="display:flex;gap:4px" id="pills">
+      <button class="pill on" data-f="all">All</button>
+      <button class="pill" data-f="prospect">Prospect</button>
+      <button class="pill" data-f="contacte">Contacté</button>
+      <button class="pill" data-f="rdv">RDV</button>
+      <button class="pill" data-f="demo">Démo</button>
+      <button class="pill" data-f="partenaire">Partenaire</button>
+      <button class="pill" data-f="refuse">Refusé</button>
+      <button class="pill" data-f="dormant">Dormant</button>
+    </div>
+    <div class="srch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="search" placeholder="Search…"></div>
+    <button class="vbtn on" data-v="kanban" title="Kanban"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg></button>
+    <button class="vbtn" data-v="map" title="Map"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg></button>
+    <button class="vbtn" data-v="list" title="List"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+  </div>
+
+  <div class="vpanel on" id="v-kanban"><div id="kanban-root"></div></div>
+  <div class="vpanel" id="v-map"><div class="map-wrap"><div id="map" style="height:100%;width:100%"></div></div></div>
+  <div class="vpanel" id="v-list"><div id="list-root"></div></div>
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="mo">
+  <div class="mo-box">
+    <h2 id="mo-title">New auction house</h2>
+    <input type="hidden" id="f-id">
+    <div class="frow frow2"><div class="fg"><label>Name</label><input id="f-name" placeholder="e.g. Christie's"></div><div class="fg"><label>Score (1-5)</label><select id="f-score"><option value="1">★</option><option value="2">★★</option><option value="3" selected>★★★</option><option value="4">★★★★</option><option value="5">★★★★★</option></select></div></div>
+    <div class="fg"><label>Address</label><input id="f-addr"></div>
+    <div class="frow frow3"><div class="fg"><label>City</label><input id="f-city"></div><div class="fg"><label>State</label><input id="f-state"></div><div class="fg"><label>Website</label><input id="f-web"></div></div>
+    <div class="frow frow2"><div class="fg"><label>Latitude</label><input id="f-lat" type="number" step="0.0001"></div><div class="fg"><label>Longitude</label><input id="f-lng" type="number" step="0.0001"></div></div>
+
+    <div class="fsep">Pipeline & integration</div>
+    <div class="frow frow2"><div class="fg"><label>Pipeline status</label><select id="f-status"><option value="prospect">Prospect</option><option value="contacte">Contacté</option><option value="rdv">RDV planifié</option><option value="demo">Démo faite</option><option value="partenaire">Partenaire</option><option value="refuse">Refusé</option><option value="dormant">Dormant</option></select></div><div class="fg"><label>Integration level</label><select id="f-integ"><option value="">—</option><option value="simple">Simple partenaire</option><option value="push">Push Campaign</option><option value="live">LiveAuctioneers</option><option value="api">Widget / API</option></select></div></div>
+
+    <div class="fsep">Next action</div>
+    <div class="frow frow2"><div class="fg"><label>Action</label><input id="f-action" placeholder="e.g. Send proposal"></div><div class="fg"><label>Due date</label><input id="f-due" type="date"></div></div>
+
+    <div class="fsep" id="fsep-refusal" style="display:none">Refusal details</div>
+    <div class="frow frow2" id="frow-refusal" style="display:none"><div class="fg"><label>Reason</label><select id="f-reason"><option value="">—</option><option value="prix">Trop cher</option><option value="concurrent">Prestataire en place</option><option value="timing">Pas le bon moment</option><option value="interet">Pas intéressé</option><option value="volume">Volume trop faible</option><option value="autre">Autre</option></select></div><div class="fg"><label>Retry date</label><input id="f-retry" type="date"></div></div>
+    <div class="fg" id="fg-reason-detail" style="display:none"><label>Refusal notes</label><textarea id="f-reason-detail" placeholder="Details…"></textarea></div>
+
+    <div class="fsep">Primary contact</div>
+    <div class="frow frow3"><div class="fg"><label>Name</label><input id="f-cn"></div><div class="fg"><label>Email</label><input id="f-ce" type="email"></div><div class="fg"><label>Phone</label><input id="f-cp" type="tel"></div></div>
+
+    <div class="fsep">Notes</div>
+    <div class="fg"><textarea id="f-notes" placeholder="History, next steps…"></textarea></div>
+
+    <div class="mo-foot">
+      <button class="btn-del" id="btn-del" style="display:none">Delete</button>
+      <button class="btn-cancel" id="btn-cancel">Cancel</button>
+      <button class="btn-save" id="btn-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV MODAL -->
+<div class="mo" id="csv-mo">
+  <div class="mo-box" style="width:460px">
+    <h2>Import revenue CSV</h2>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px">Format: <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px">Owner Name, Final Price</code><br>Each row = one order. Matches on Owner Name = MDV name in CRM.</p>
+    <div class="csv-drop" id="csv-drop">
+      <p>Drop CSV here or click to browse</p>
+      <span>Auto-detects , or ; separator</span>
+    </div>
+    <input type="file" id="csv-file" accept=".csv" style="display:none">
+    <div id="csv-result"></div>
+    <div class="mo-foot" style="margin-top:16px"><button class="btn-cancel" id="csv-close">Close</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PW='thepack2026';
+const SK='crm_ah_v2';
+const PIPE={prospect:'Prospect',contacte:'Contacté',rdv:'RDV planifié',demo:'Démo faite',partenaire:'Partenaire',refuse:'Refusé',dormant:'Dormant'};
+const PIPE_COLORS={prospect:['var(--blue-bg)','var(--blue)'],contacte:['var(--purple-bg)','var(--purple)'],rdv:['var(--amber-bg)','var(--amber)'],demo:['#FEF3C7','#92400E'],partenaire:['var(--green-bg)','var(--green)'],refuse:['var(--red-bg)','var(--red)'],dormant:['var(--gray-bg)','var(--gray)']};
+const INTEG={simple:'Simple partenaire',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API','':''};
+const REASONS={prix:'Trop cher',concurrent:'Prestataire en place',timing:'Pas le bon moment',interet:'Pas intéressé',volume:'Volume trop faible',autre:'Autre'};
+const KANBAN_COLS=['prospect','contacte','rdv','demo'];
+
+// AUTH
+const authEl=document.getElementById('auth'),appEl=document.getElementById('app');
+if(sessionStorage.getItem('crm2_auth')==='ok')unlock();
+document.getElementById('auth-pw').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(e.target.value===PW){sessionStorage.setItem('crm2_auth','ok');unlock();}
+    else{document.getElementById('auth-err').textContent='Incorrect';e.target.value='';}
+  }
+});
+function unlock(){authEl.classList.add('hidden');appEl.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(init));}
+
+// STATE
+let mdvs=JSON.parse(localStorage.getItem(SK)||'[]');
+let fSt='all',fQ='';
+
+if(!mdvs.length){
+  mdvs=[
+    {id:uid(),name:"Christie's",addr:"20 Rockefeller Plaza",city:"New York",state:"NY",web:"https://christies.com",lat:40.7587,lng:-73.9787,status:"partenaire",integ:"push",score:5,action:"Renewal discussion",due:"2026-01-15",reason:"",reasonDetail:"",retry:"",startDate:"2024-01-15",contact:{n:"Sarah Johnson",e:"s.johnson@christies.com",p:""},notes:"Key partner. Annual renewal in January.",revenue:38000,lastOrder:"2026-03-20",orderCount:45},
+    {id:uid(),name:"Sotheby's",addr:"1334 York Avenue",city:"New York",state:"NY",web:"https://sothebys.com",lat:40.7716,lng:-73.9560,status:"partenaire",integ:"simple",score:5,action:"Pitch exclusivity",due:"2026-04-10",reason:"",reasonDetail:"",retry:"",startDate:"2024-03-01",contact:{n:"Michael Chen",e:"m.chen@sothebys.com",p:""},notes:"Growing volume. Discuss push campaign upgrade.",revenue:32000,lastOrder:"2026-03-18",orderCount:38},
+    {id:uid(),name:"Phillips",addr:"432 Park Avenue",city:"New York",state:"NY",web:"https://phillips.com",lat:40.7565,lng:-73.9715,status:"demo",integ:"",score:4,action:"Review test results",due:"2026-04-15",reason:"",reasonDetail:"",retry:"",startDate:"",contact:{n:"Emma Davis",e:"e.davis@phillips.com",p:""},notes:"Test on 3 lots. Decision expected end of Q2.",revenue:0,lastOrder:"",orderCount:0},
+    {id:uid(),name:"Heritage Auctions",addr:"445 Park Avenue",city:"New York",state:"NY",web:"https://ha.com",lat:40.7620,lng:-73.9712,status:"partenaire",integ:"live",score:3,action:"",due:"",reason:"",reasonDetail:"",retry:"",startDate:"2024-06-01",contact:{n:"David Miller",e:"",p:""},notes:"Small volume but good basket. LiveAuctioneers integrated.",revenue:9500,lastOrder:"2026-03-10",orderCount:12},
+    {id:uid(),name:"Bonhams",addr:"580 Madison Avenue",city:"New York",state:"NY",web:"https://bonhams.com",lat:40.7635,lng:-73.9680,status:"contacte",integ:"",score:3,action:"Follow-up Lisa Wang",due:"2026-04-05",reason:"",reasonDetail:"",retry:"",startDate:"",contact:{n:"Lisa Wang",e:"l.wang@bonhams.com",p:""},notes:"Interested in tri-state coverage.",revenue:0,lastOrder:"",orderCount:0},
+    {id:uid(),name:"Doyle",addr:"175 East 87th St",city:"New York",state:"NY",web:"https://doyle.com",lat:40.7798,lng:-73.9544,status:"prospect",integ:"",score:2,action:"Send intro email",due:"2026-03-28",reason:"",reasonDetail:"",retry:"",startDate:"",contact:{n:"",e:"",p:""},notes:"Medium potential.",revenue:0,lastOrder:"",orderCount:0},
+    {id:uid(),name:"Freeman's",addr:"2400 Market St",city:"Philadelphia",state:"PA",web:"https://freemans.com",lat:39.9537,lng:-75.1790,status:"prospect",integ:"",score:3,action:"Call intro meeting",due:"2026-04-02",reason:"",reasonDetail:"",retry:"",startDate:"",contact:{n:"",e:"",p:""},notes:"Philly market — expansion potential.",revenue:0,lastOrder:"",orderCount:0},
+    {id:uid(),name:"Swann Galleries",addr:"104 E 25th St",city:"New York",state:"NY",web:"https://swanngalleries.com",lat:40.7415,lng:-73.9860,status:"refuse",integ:"",score:2,action:"",due:"",reason:"concurrent",reasonDetail:"Already working with Cadogan Tate. Revisit in 6 months.",retry:"2026-09-01",startDate:"",contact:{n:"Tom Reed",e:"",p:""},notes:"",revenue:0,lastOrder:"",orderCount:0},
+  ];
+  save();
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function save(){localStorage.setItem(SK,JSON.stringify(mdvs))}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmt$(n){return'$'+Math.round(n).toLocaleString('en-US')}
+function today(){return new Date().toISOString().slice(0,10)}
+function isOverdue(d){return d&&d<today()}
+function filtered(){
+  let r=[...mdvs];
+  if(fSt!=='all')r=r.filter(m=>m.status===fSt);
+  if(fQ){const q=fQ.toLowerCase();r=r.filter(m=>m.name.toLowerCase().includes(q)||(m.city||'').toLowerCase().includes(q)||(m.state||'').toLowerCase().includes(q));}
+  return r;
+}
+function stars(n){return'★'.repeat(n||0)+'☆'.repeat(5-(n||0))}
+function integBadge(v){
+  if(!v)return'';
+  const colors={simple:['var(--gray-bg)','var(--gray)'],push:['var(--blue-bg)','var(--blue)'],live:['var(--purple-bg)','var(--purple)'],api:['var(--green-bg)','var(--green)']};
+  const c=colors[v]||colors.simple;
+  return`<span class="kcard-badge" style="background:${c[0]};color:${c[1]}">${INTEG[v]}</span>`;
+}
+
+// ALERTS
+function renderAlerts(){
+  const el=document.getElementById('alerts');
+  const overdue=mdvs.filter(m=>m.due&&isOverdue(m.due)&&!['refuse','dormant'].includes(m.status));
+  const dormant=mdvs.filter(m=>m.status==='dormant').length;
+  const retryDue=mdvs.filter(m=>m.status==='refuse'&&m.retry&&m.retry<=today()).length;
+  const partenaires=mdvs.filter(m=>m.status==='partenaire').length;
+  let h='';
+  if(overdue.length)h+=`<div class="alert-item urgent">⚠ ${overdue.length} overdue action${overdue.length>1?'s':''}</div>`;
+  if(retryDue)h+=`<div class="alert-item warn">↻ ${retryDue} refused — ready to retry</div>`;
+  if(dormant)h+=`<div class="alert-item warn">💤 ${dormant} dormant partner${dormant>1?'s':''}</div>`;
+  h+=`<div class="alert-item ok">${partenaires} active partner${partenaires>1?'s':''}</div>`;
+  const totalRev=mdvs.filter(m=>m.status==='partenaire').reduce((s,m)=>s+(m.revenue||0),0);
+  if(totalRev)h+=`<div class="alert-item info">Revenue: ${fmt$(totalRev)}/mo</div>`;
+  el.innerHTML=h;
+}
+
+// KANBAN
+function renderKanban(){
+  const root=document.getElementById('kanban-root');
+  const items=filtered();
+  let h='<div class="kanban">';
+  KANBAN_COLS.forEach(col=>{
+    const cards=items.filter(m=>m.status===col).sort((a,b)=>{
+      if(a.due&&!b.due)return-1;if(!a.due&&b.due)return 1;
+      if(a.due&&b.due)return a.due.localeCompare(b.due);return(b.score||0)-(a.score||0);
+    });
+    const[bg,fg]=PIPE_COLORS[col];
+    h+=`<div class="kcol"><div class="kcol-hdr"><span class="kcol-title">${PIPE[col]}</span><span class="kcol-count" style="background:${bg};color:${fg}">${cards.length}</span></div>`;
+    cards.forEach(m=>{ h+=kcard(m); });
+    if(!cards.length)h+=`<div style="text-align:center;padding:24px 8px;color:var(--t3);font-size:11px">Empty</div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+
+  // Bottom zone
+  const partenaires=items.filter(m=>m.status==='partenaire').sort((a,b)=>(b.revenue||0)-(a.revenue||0));
+  const refused=items.filter(m=>m.status==='refuse');
+  const dormant=items.filter(m=>m.status==='dormant');
+
+  // Partenaires row
+  if(fSt==='all'||fSt==='partenaire'){
+    h+=`<div style="margin-bottom:12px"><div class="kcol-hdr" style="padding:0 4px 8px"><span class="kcol-title" style="font-size:12px">✓ Partenaires actifs</span><span class="kcol-count" style="background:var(--green-bg);color:var(--green)">${partenaires.length}</span></div>`;
+    if(partenaires.length){
+      h+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">`;
+      partenaires.forEach(m=>{ h+=kcard(m); });
+      h+=`</div>`;
+    } else h+=`<div class="bz-empty">No active partners</div>`;
+    h+=`</div>`;
+  }
+
+  // Refused + Dormant
+  h+=`<div class="bottom-zone">`;
+  if(fSt==='all'||fSt==='refuse'){
+    h+=`<div class="bz-section"><div class="bz-title">✗ Refusé <span class="kcol-count" style="background:var(--red-bg);color:var(--red)">${refused.length}</span></div><div class="bz-cards">`;
+    refused.forEach(m=>{
+      const retryReady=m.retry&&m.retry<=today();
+      h+=`<div class="bz-card" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))"><div class="bz-card-name">${esc(m.name)}</div><div class="bz-card-detail">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</div>`;
+      if(m.reason)h+=`<div class="bz-card-reason">${REASONS[m.reason]||m.reason}</div>`;
+      if(m.retry)h+=`<div class="bz-card-relance"${retryReady?' style="color:var(--green);font-weight:600"':''}>${retryReady?'↻ Ready to retry!':'Retry: '+m.retry}</div>`;
+      h+=`</div>`;
+    });
+    if(!refused.length)h+=`<div class="bz-empty">None</div>`;
+    h+=`</div></div>`;
+  }
+  if(fSt==='all'||fSt==='dormant'){
+    h+=`<div class="bz-section"><div class="bz-title">💤 Dormant <span class="kcol-count" style="background:var(--gray-bg);color:var(--gray)">${dormant.length}</span></div><div class="bz-cards">`;
+    dormant.forEach(m=>{
+      h+=`<div class="bz-card" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))"><div class="bz-card-name">${esc(m.name)}</div><div class="bz-card-detail">${esc(m.city||'')} — ${m.integ?INTEG[m.integ]:''}</div>`;
+      if(m.revenue)h+=`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3);margin-top:4px">Last rev: ${fmt$(m.revenue)}/mo</div>`;
+      h+=`</div>`;
+    });
+    if(!dormant.length)h+=`<div class="bz-empty">None</div>`;
+    h+=`</div></div>`;
+  }
+  h+=`</div>`;
+  root.innerHTML=h;
+}
+
+function kcard(m){
+  const od=isOverdue(m.due);
+  let h=`<div class="kcard" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">`;
+  h+=`<div class="kcard-name">${esc(m.name)}</div>`;
+  h+=`<div class="kcard-loc">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</div>`;
+  h+=`<div class="kcard-meta"><span style="font-size:12px;color:var(--amber)">${stars(m.score)}</span>${integBadge(m.integ)}</div>`;
+  if(m.action||m.due){
+    h+=`<div class="kcard-next"><div class="kcard-next-label">Next action</div>`;
+    if(m.action)h+=`<div class="kcard-next-action">${esc(m.action)}</div>`;
+    if(m.due)h+=`<div class="kcard-next-date ${od?'overdue':'upcoming'}">${od?'⚠ Overdue: ':''}${m.due}</div>`;
+    h+=`</div>`;
+  }
+  if(m.status==='partenaire'&&m.revenue)h+=`<div class="kcard-rev">${fmt$(m.revenue)}/mo · ${m.orderCount||0} orders</div>`;
+  if(m.notes)h+=`<div class="kcard-note">${esc(m.notes.slice(0,60))}${m.notes.length>60?'…':''}</div>`;
+  h+=`</div>`;
+  return h;
+}
+
+// MAP
+let lmap=null,markers=[];
+const SC={prospect:'#1D4ED8',contacte:'#6D28D9',rdv:'#B45309',demo:'#92400E',partenaire:'#166534',refuse:'#B91C1C',dormant:'#78716C'};
+function renderMap(){
+  const items=filtered().filter(m=>m.lat&&m.lng);
+  if(!lmap){
+    lmap=L.map('map',{zoomControl:true}).setView([40.75,-73.97],7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',maxZoom:18}).addTo(lmap);
+    const leg=L.control({position:'bottomleft'});
+    leg.onAdd=function(){const d=L.DomUtil.create('div');d.style.cssText='background:rgba(255,255,255,.92);backdrop-filter:blur(8px);padding:8px 14px;border-radius:16px;border:1px solid #E8E6E1;font-family:Outfit;font-size:10px;display:flex;gap:10px;color:#57534E';d.innerHTML=Object.entries({Prospect:'#1D4ED8',Contacté:'#6D28D9','RDV/Démo':'#B45309',Partenaire:'#166534',Refusé:'#B91C1C',Dormant:'#78716C'}).map(([k,c])=>`<span style="display:flex;align-items:center;gap:4px"><i style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block"></i>${k}</span>`).join('');return d;};
+    leg.addTo(lmap);
+  }
+  markers.forEach(m=>lmap.removeLayer(m));markers=[];
+  if(!items.length){lmap.setView([40.75,-73.97],7);return;}
+  items.forEach(m=>{
+    const mk=L.circleMarker([m.lat,m.lng],{radius:Math.max(7,4+(m.score||1)*2),fillColor:SC[m.status]||'#78716C',color:'#fff',weight:2.5,fillOpacity:.85}).addTo(lmap);
+    mk.bindPopup(`<div class="map-popup-name">${esc(m.name)}</div><div class="map-popup-detail"><strong>${PIPE[m.status]}</strong>${m.integ?' · '+INTEG[m.integ]:''}<br>${stars(m.score)}<br>${m.revenue?fmt$(m.revenue)+'/mo':''}</div><button class="map-popup-btn" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">Edit</button>`,{maxWidth:250});
+    mk.bindTooltip(m.name,{direction:'top',offset:[0,-8]});
+    markers.push(mk);
+  });
+  lmap.fitBounds(L.featureGroup(markers).getBounds().pad(.15));
+  setTimeout(()=>lmap.invalidateSize(),100);
+}
+
+// LIST
+function renderList(){
+  const items=filtered().sort((a,b)=>(b.score||0)-(a.score||0));
+  const el=document.getElementById('list-root');
+  if(!items.length){el.innerHTML='<div style="text-align:center;padding:60px;color:var(--t3)">No results</div>';return;}
+  let h=`<table class="ltable"><thead><tr><th>Name</th><th>Status</th><th>Integration</th><th>Score</th><th>Next action</th><th>Revenue</th></tr></thead><tbody>`;
+  items.forEach(m=>{
+    const[bg,fg]=PIPE_COLORS[m.status]||['var(--gray-bg)','var(--gray)'];
+    const od=isOverdue(m.due);
+    h+=`<tr onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">
+      <td><strong>${esc(m.name)}</strong><br><span style="color:var(--t3)">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</span></td>
+      <td><span class="kcard-badge" style="background:${bg};color:${fg}">${PIPE[m.status]}</span></td>
+      <td style="font-size:11px">${m.integ?INTEG[m.integ]:'—'}</td>
+      <td style="color:var(--amber)">${stars(m.score)}</td>
+      <td>${m.action?esc(m.action):'—'}${m.due?`<br><span style="font-size:11px;${od?'color:var(--red);font-weight:600':'color:var(--t3)'}">${m.due}</span>`:''}</td>
+      <td style="font-family:'JetBrains Mono',monospace">${m.revenue?fmt$(m.revenue)+'/mo':'—'}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table>`;
+  el.innerHTML=h;
+}
+
+// FILTERS
+document.getElementById('pills').addEventListener('click',e=>{const b=e.target.closest('.pill');if(!b)return;fSt=b.dataset.f;document.querySelectorAll('#pills .pill').forEach(p=>p.classList.remove('on'));b.classList.add('on');renderAll();});
+document.getElementById('search').addEventListener('input',e=>{fQ=e.target.value;renderAll();});
+document.querySelectorAll('.vbtn').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.vbtn').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.vpanel').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('v-'+b.dataset.v).classList.add('on');if(b.dataset.v==='map')setTimeout(()=>{if(lmap)lmap.invalidateSize();renderMap();},100);});});
+
+// MODAL
+const mo=document.getElementById('mo');
+document.getElementById('btn-add').addEventListener('click',()=>openMo());
+document.getElementById('btn-cancel').addEventListener('click',closeMo);
+mo.addEventListener('click',e=>{if(e.target===mo)closeMo();});
+
+// Show/hide refusal fields
+document.getElementById('f-status').addEventListener('change',e=>{
+  const show=e.target.value==='refuse';
+  ['fsep-refusal','frow-refusal','fg-reason-detail'].forEach(id=>document.getElementById(id).style.display=show?'':'none');
+});
+
+function openMo(m){
+  const e=!!m;
+  document.getElementById('mo-title').textContent=e?'Edit auction house':'New auction house';
+  document.getElementById('f-id').value=e?m.id:'';
+  document.getElementById('f-name').value=e?m.name:'';
+  document.getElementById('f-score').value=e?m.score||3:3;
+  document.getElementById('f-addr').value=e?m.addr||'':'';
+  document.getElementById('f-city').value=e?m.city||'':'';
+  document.getElementById('f-state').value=e?m.state||'':'';
+  document.getElementById('f-web').value=e?m.web||'':'';
+  document.getElementById('f-lat').value=e&&m.lat?m.lat:'';
+  document.getElementById('f-lng').value=e&&m.lng?m.lng:'';
+  document.getElementById('f-status').value=e?m.status:'prospect';
+  document.getElementById('f-integ').value=e?m.integ||'':'';
+  document.getElementById('f-action').value=e?m.action||'':'';
+  document.getElementById('f-due').value=e?m.due||'':'';
+  document.getElementById('f-reason').value=e?m.reason||'':'';
+  document.getElementById('f-reason-detail').value=e?m.reasonDetail||'':'';
+  document.getElementById('f-retry').value=e?m.retry||'':'';
+  document.getElementById('f-cn').value=e&&m.contact?m.contact.n||'':'';
+  document.getElementById('f-ce').value=e&&m.contact?m.contact.e||'':'';
+  document.getElementById('f-cp').value=e&&m.contact?m.contact.p||'':'';
+  document.getElementById('f-notes').value=e?m.notes||'':'';
+  document.getElementById('btn-del').style.display=e?'block':'none';
+  const showRef=e&&m.status==='refuse';
+  ['fsep-refusal','frow-refusal','fg-reason-detail'].forEach(id=>document.getElementById(id).style.display=showRef?'':'none');
+  mo.classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),100);
+}
+window.openMo=openMo;
+function closeMo(){mo.classList.remove('open');}
+
+document.getElementById('btn-save').addEventListener('click',()=>{
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('Name required',1);return;}
+  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr:document.getElementById('f-addr').value.trim(),city:document.getElementById('f-city').value.trim(),state:document.getElementById('f-state').value.trim(),web:document.getElementById('f-web').value.trim(),lat:parseFloat(document.getElementById('f-lat').value)||null,lng:parseFloat(document.getElementById('f-lng').value)||null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,reasonDetail:document.getElementById('f-reason-detail').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
+  const eid=document.getElementById('f-id').value;
+  if(eid){const i=mdvs.findIndex(m=>m.id===eid);if(i>-1){mdvs[i]={...mdvs[i],...data};}toast('Updated');}
+  else{mdvs.push({id:uid(),...data,revenue:0,lastOrder:'',orderCount:0});toast('Added');}
+  save();renderAll();closeMo();
+});
+
+document.getElementById('btn-del').addEventListener('click',()=>{
+  const eid=document.getElementById('f-id').value;
+  if(!eid||!confirm('Delete?'))return;
+  mdvs=mdvs.filter(m=>m.id!==eid);save();renderAll();closeMo();toast('Deleted');
+});
+
+// CSV IMPORT
+const csvMo=document.getElementById('csv-mo');
+document.getElementById('btn-csv-open').addEventListener('click',()=>csvMo.classList.add('open'));
+document.getElementById('csv-close').addEventListener('click',()=>csvMo.classList.remove('open'));
+csvMo.addEventListener('click',e=>{if(e.target===csvMo)csvMo.classList.remove('open');});
+const csvDrop=document.getElementById('csv-drop');
+const csvFile=document.getElementById('csv-file');
+csvDrop.addEventListener('click',()=>csvFile.click());
+csvDrop.addEventListener('dragover',e=>{e.preventDefault();csvDrop.classList.add('over');});
+csvDrop.addEventListener('dragleave',()=>csvDrop.classList.remove('over'));
+csvDrop.addEventListener('drop',e=>{e.preventDefault();csvDrop.classList.remove('over');processCSV(e.dataTransfer.files[0]);});
+csvFile.addEventListener('change',e=>{if(e.target.files[0])processCSV(e.target.files[0]);e.target.value='';});
+
+function processCSV(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const text=ev.target.result;
+    const fl=text.split('\n')[0];
+    const sep=fl.split(';').length>fl.split(',').length?';':',';
+    const lines=text.trim().split('\n');
+    const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+
+    // Guess columns
+    const guess=(cs)=>hdrs.find(h=>cs.some(c=>h.toLowerCase().replace(/[\s_-]/g,'').includes(c)));
+    const colOwner=guess(['ownername','owner','name'])||hdrs[0];
+    const colPrice=guess(['finalprice','final','price','amount','total'])||hdrs[1];
+
+    // Aggregate by owner
+    const byOwner={};
+    let parsed=0;
+    lines.slice(1).filter(l=>l.trim()).forEach(line=>{
+      const vals=line.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+      const row={};hdrs.forEach((h,i)=>{row[h]=vals[i]||'';});
+      const owner=(row[colOwner]||'').trim();
+      const price=parseFloat(String(row[colPrice]).replace(/[^0-9.\-]/g,''))||0;
+      if(!owner)return;
+      if(!byOwner[owner])byOwner[owner]={orders:0,revenue:0};
+      byOwner[owner].orders++;
+      byOwner[owner].revenue+=price;
+      parsed++;
+    });
+
+    // Match to MDVs
+    let matched=0,unmatched=[];
+    Object.entries(byOwner).forEach(([owner,data])=>{
+      const mdv=mdvs.find(m=>m.name.toLowerCase()===owner.toLowerCase());
+      if(mdv){
+        mdv.revenue=Math.round(data.revenue);
+        mdv.orderCount=data.orders;
+        mdv.lastOrder=today();
+        matched++;
+      } else {
+        unmatched.push(owner);
+      }
+    });
+    save();renderAll();
+
+    const resEl=document.getElementById('csv-result');
+    let msg=`✓ ${parsed} orders processed. ${matched} MDV${matched>1?'s':''} matched.`;
+    if(unmatched.length)msg+=`<br><span style="color:var(--amber)">⚠ ${unmatched.length} unmatched: ${unmatched.slice(0,5).join(', ')}${unmatched.length>5?'…':''}</span>`;
+    resEl.innerHTML=msg;
+    resEl.className='csv-result'+(unmatched.length?' warn':'');
+    resEl.style.display='block';
+    toast('Revenue updated — '+matched+' MDVs');
+  };
+  reader.readAsText(file);
+}
+
+// EXPORT / JSON IMPORT
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({_app:'crm-ah',_v:2,_at:new Date().toISOString(),mdvs},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='crm-auction-houses-'+today()+'.json';a.click();
+  toast('Exported '+mdvs.length+' houses');
+});
+document.getElementById('btn-json-import').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.mdvs){mdvs=d.mdvs;save();renderAll();toast('Imported '+mdvs.length);}else toast('Invalid',1);}catch{toast('Invalid',1);}e.target.value='';};
+  r.readAsText(f);
+});
+
+// TOAST
+function toast(msg,err){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2500);}
+
+// KEYBOARD
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMo();csvMo.classList.remove('open');}});
+
+// RENDER
+function renderAll(){renderAlerts();renderKanban();renderMap();renderList();}
+function init(){renderAll();setTimeout(()=>{if(lmap)lmap.invalidateSize();renderMap();},300);}
+</script>
+</body>
+</html>
