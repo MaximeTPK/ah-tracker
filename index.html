@@ -148,6 +148,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .csv-drop:hover,.csv-drop.ov{border-color:var(--nv);background:var(--nv2)}
 .csv-drop p{font-size:12px;color:var(--t2);margin-top:6px}
 .csv-drop span{font-size:10px;color:var(--t3)}
+.csv-mode-btn{font-size:11px !important;flex:1;text-align:center}
+.csv-mode-btn.on{background:var(--nv) !important;color:#fff !important;border-color:var(--nv) !important}
 .csv-res{margin-top:12px;padding:10px;background:var(--grn-bg);border-radius:var(--r);font-size:12px;color:var(--grn);font-weight:500}
 
 .toast{position:fixed;bottom:16px;right:16px;padding:8px 16px;border-radius:var(--r);font-size:11px;font-weight:500;color:#fff;background:var(--nv);box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(50px);opacity:0;transition:all .3s;z-index:10001}
@@ -180,7 +182,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <button class="sb-lang" id="lang-btn" title="Language">EN</button>
 <button class="sb-btn" id="sb-csv" title="Import CSV"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
 <button class="sb-btn" id="sb-exp" title="Export"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-<label class="sb-btn" title="Import JSON"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><input type="file" id="json-imp" accept=".json" style="display:none"></label>
+<label class="sb-btn" title="Restore backup (JSON)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 119 9"/><polyline points="3 21 3 12 12 12"/></svg><input type="file" id="json-imp" accept=".json" style="display:none"></label>
 </nav>
 
 <div class="main">
@@ -204,7 +206,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <input type="hidden" id="f-lat"><input type="hidden" id="f-lng">
 <div class="fsep" id="lbl-pipe-sep"></div>
 <div class="fr fr2"><div class="fg"><label id="lbl-status"></label><select id="f-status"></select></div><div class="fg"><label id="lbl-integ"></label><select id="f-integ"><option value="">—</option></select></div></div>
-<div class="fg" style="display:flex;align-items:center;gap:8px;margin:4px 0 8px"><input type="checkbox" id="f-ship" style="width:auto;margin:0"><label for="f-ship" style="font-size:12px;color:var(--t2);text-transform:none;letter-spacing:0;cursor:pointer" id="lbl-ship">In-house shipping (not eligible)</label></div>
+<div class="fg" style="display:flex;align-items:center;gap:8px;margin:4px 0 4px"><input type="checkbox" id="f-ship" style="width:auto;margin:0"><label for="f-ship" style="font-size:12px;color:var(--t2);text-transform:none;letter-spacing:0;cursor:pointer" id="lbl-ship">In-house shipping (not eligible)</label></div>
+<div class="fg" style="display:flex;align-items:center;gap:8px;margin:0 0 4px"><input type="checkbox" id="f-onla" style="width:auto;margin:0"><label for="f-onla" style="font-size:12px;color:var(--t2);text-transform:none;letter-spacing:0;cursor:pointer" id="lbl-onla">On LiveAuctioneers</label></div>
+<div class="fg" style="display:flex;align-items:center;gap:8px;margin:0 0 8px"><input type="checkbox" id="f-dealer" style="width:auto;margin:0"><label for="f-dealer" style="font-size:12px;color:var(--t2);text-transform:none;letter-spacing:0;cursor:pointer" id="lbl-dealer">Dealer Tool Access</label></div>
 <div class="fsep" id="lbl-next-sep"></div>
 <div class="fr fr2"><div class="fg"><label>Action</label><input id="f-action"></div><div class="fg"><label id="lbl-due"></label><input id="f-due" type="date"></div></div>
 <div class="fsep" id="fsep-ref" style="display:none"></div>
@@ -222,6 +226,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <p style="font-size:12px;color:var(--t2);margin-bottom:14px" id="csv-desc"></p>
 <div class="csv-drop" id="csv-drop"><p id="csv-drop-text"></p><span id="csv-drop-hint"></span></div>
 <input type="file" id="csv-file" accept=".csv" style="display:none">
+<div style="margin-top:12px;display:flex;gap:6px">
+  <button class="btn-c csv-mode-btn on" data-mode="list" id="mode-list"></button>
+  <button class="btn-c csv-mode-btn" data-mode="revenue" id="mode-rev"></button>
+</div>
 <div id="csv-res"></div>
 <div class="mo-ft" style="margin-top:12px"><button class="btn-c" id="csv-close"></button></div>
 </div></div>
@@ -242,7 +250,7 @@ en:{
   reasons:{prix:'Too expensive',concurrent:'Existing provider',timing:'Bad timing',interet:'Not interested',volume:'Volume too low',autre:'Other'},
   alerts:{overdue:'overdue',retry:'ready to retry',partners:'partners',revenue:'Revenue',dormant:'cold'},
   modal:{newTitle:'New auction house',editTitle:'Edit auction house',name:'Name',addr:'Address',city:'City',state:'State',web:'Website',pipeSep:'Pipeline & integration',status:'Status',integ:'Integration',nextSep:'Next action',action:'Action',due:'Due date',refSep:'Refusal details',reason:'Reason',retry:'Retry date',refNotes:'Refusal notes',contactSep:'Primary contact',cn:'Name',cp:'Phone',save:'Save',cancel:'Cancel',del:'Delete'},
-  csv:{title:'Import revenue CSV',desc:'Format: Owner Name, Final Price — one row per order. Matches on Owner Name.',drop:'Drop CSV here or click',hint:'Auto-detects separator',close:'Close',orders:'orders',matched:'matched',unmatched:'unmatched',updated:'Revenue updated'},
+  csv:{title:'Import CSV',desc:'Drop a CSV file to import auction houses or update revenue.',drop:'Drop CSV here or click',hint:'Auto-detects separator and columns',close:'Close',modeList:'Import MDV list',modeRev:'Update revenue',orders:'orders',matched:'matched',unmatched:'unmatched',updated:'Revenue updated'},
   kanban:{empty:'Empty',noPartners:'No active partners',none:'None',readyRetry:'Ready to retry'},
   map:{edit:'Edit',noResults:'No results'},
   list:{noResults:'No results'},
@@ -255,7 +263,7 @@ fr:{
   reasons:{prix:'Trop cher',concurrent:'Prestataire en place',timing:'Pas le bon moment',interet:'Pas intéressé',volume:'Volume trop faible',autre:'Autre'},
   alerts:{overdue:'en retard',retry:'à relancer',partners:'partenaires',revenue:'CA',dormant:'cold'},
   modal:{newTitle:'Nouvelle maison de vente',editTitle:'Modifier la maison de vente',name:'Nom',addr:'Adresse',city:'Ville',state:'État',web:'Site web',pipeSep:'Pipeline & intégration',status:'Statut',integ:'Intégration',nextSep:'Prochaine action',action:'Action',due:'Date échéance',refSep:'Détails du refus',reason:'Raison',retry:'Date de relance',refNotes:'Notes refus',contactSep:'Contact principal',cn:'Nom',cp:'Téléphone',save:'Enregistrer',cancel:'Annuler',del:'Supprimer'},
-  csv:{title:'Import CSV revenus',desc:'Format : Owner Name, Final Price — une ligne par commande. Match sur Owner Name.',drop:'Glisser un CSV ici ou cliquer',hint:'Séparateur auto-détecté',close:'Fermer',orders:'commandes',matched:'matchés',unmatched:'non matchés',updated:'CA mis à jour'},
+  csv:{title:'Import CSV',desc:'Glisse un fichier CSV pour importer des maisons ou mettre à jour le CA.',drop:'Glisser un CSV ici ou cliquer',hint:'Séparateur et colonnes auto-détectés',close:'Fermer',modeList:'Import liste MDV',modeRev:'Mise à jour CA',orders:'commandes',matched:'matchés',unmatched:'non matchés',updated:'CA mis à jour'},
   kanban:{empty:'Vide',noPartners:'Aucun partenaire actif',none:'Aucun',readyRetry:'Prêt à relancer'},
   map:{edit:'Modifier',noResults:'Aucun résultat'},
   list:{noResults:'Aucun résultat'},
@@ -290,11 +298,15 @@ function applyLang(){
   document.getElementById('btn-cancel').textContent=L.modal.cancel;
   document.getElementById('btn-del').textContent=L.modal.del;
   document.getElementById('lbl-ship').textContent=lang==='en'?'In-house shipping (not eligible)':'Shipping interne (non éligible)';
+  document.getElementById('lbl-onla').textContent=lang==='en'?'On LiveAuctioneers':'Sur LiveAuctioneers';
+  document.getElementById('lbl-dealer').textContent=lang==='en'?'Dealer Tool Access':'Accès Dealer Tool';
   document.getElementById('csv-title').textContent=L.csv.title;
   document.getElementById('csv-desc').textContent=L.csv.desc;
   document.getElementById('csv-drop-text').textContent=L.csv.drop;
   document.getElementById('csv-drop-hint').textContent=L.csv.hint;
   document.getElementById('csv-close').textContent=L.csv.close;
+  document.getElementById('mode-list').textContent=L.csv.modeList;
+  document.getElementById('mode-rev').textContent=L.csv.modeRev;
   // Populate status select
   const ss=document.getElementById('f-status');ss.innerHTML='';
   Object.entries(L.pipe).forEach(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=v;ss.appendChild(o);});
@@ -343,6 +355,11 @@ function stars(n){return'★'.repeat(n||0)+'☆'.repeat(5-(n||0))}
 function fil(){let r=[...mdvs];if(fSt!=='all')r=r.filter(m=>m.status===fSt);if(fQ){const q=fQ.toLowerCase();r=r.filter(m=>m.name.toLowerCase().includes(q)||(m.city||'').toLowerCase().includes(q)||(m.state||'').toLowerCase().includes(q));}return r;}
 function ibadge(v){if(!v)return'';const L=t();const cs={simple:['var(--gry-bg)','var(--gry)'],push:['var(--blu-bg)','var(--blu)'],live:['var(--pur-bg)','var(--pur)'],api:['var(--grn-bg)','var(--grn)']};const c=cs[v]||cs.simple;return`<span class="kc-badge" style="background:${c[0]};color:${c[1]}">${L.integ[v]||v}</span>`;}
 function shipBadge(m){if(!m.inHouseShipping)return'';return`<span class="kc-badge" style="background:var(--red-bg);color:var(--red)">🚫 ${lang==='en'?'In-house shipping':'Shipping interne'}</span>`;}
+function laBadge(m){
+  if(!m.onLiveAuctioneers)return'';
+  if(m.integ==='live')return`<span class="kc-badge" style="background:var(--pur-bg);color:var(--pur)">LA ✓</span>`;
+  return`<span class="kc-badge" style="background:var(--amb-bg);color:var(--amb)">LA — ${lang==='en'?'not shipper':'pas shipper'}</span>`;
+}
 function borderColor(st){return SCOLS[st]?SCOLS[st][2]:'#78716C';}
 
 // ═══ ALERTS ═══
@@ -404,7 +421,7 @@ function kcard(m,bc){
   const L=t(),o=od(m.due);
   let h=`<div class="kc" style="border-left:3px solid ${bc}" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">`;
   h+=`<div class="kc-name">${esc(m.name)}</div><div class="kc-loc">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</div>`;
-  h+=`<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap"><span class="kc-stars">${stars(m.score)}</span>${ibadge(m.integ)}${shipBadge(m)}</div>`;
+  h+=`<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap"><span class="kc-stars">${stars(m.score)}</span>${ibadge(m.integ)}${shipBadge(m)}${laBadge(m)}</div>`;
   if(m.action||m.due){h+=`<div class="kc-next"><div class="kc-nl">${L.modal.nextSep}</div>`;if(m.action)h+=`<div class="kc-na">${esc(m.action)}</div>`;if(m.due)h+=`<div class="kc-nd ${o?'od':'ok'}">${o?'⚠ ':''} ${m.due}</div>`;h+=`</div>`;}
   if(m.status==='partenaire'&&m.revenue)h+=`<div class="kc-rev">${fmt$(m.revenue)}${t().perMonth} · ${m.orderCount||0} ${t().ord}</div>`;
   if(m.notes)h+=`<div class="kc-note">${esc(m.notes.slice(0,55))}${m.notes.length>55?'…':''}</div>`;
@@ -469,7 +486,9 @@ function openMo(m){
   document.getElementById('f-lng').value=e&&m.lng?m.lng:'';
   document.getElementById('f-status').value=e?m.status:'prospect';
   document.getElementById('f-integ').value=e?m.integ||'':'';
-  document.getElementById('f-ship').checked=e?!!m.inHouseShipping:false;  document.getElementById('f-action').value=e?m.action||'':'';
+  document.getElementById('f-ship').checked=e?!!m.inHouseShipping:false;
+  document.getElementById('f-onla').checked=e?!!m.onLiveAuctioneers:false;
+  document.getElementById('f-dealer').checked=e?!!m.dealerTool:false;  document.getElementById('f-action').value=e?m.action||'':'';
   document.getElementById('f-due').value=e?m.due||'':'';
   document.getElementById('f-reason').value=e?m.reason||'':'';
   document.getElementById('f-rd').value=e?m.rd||'':'';
@@ -504,7 +523,7 @@ document.getElementById('btn-save').addEventListener('click',async()=>{
   const addr=document.getElementById('f-addr').value.trim();
   const city=document.getElementById('f-city').value.trim();
   const state=document.getElementById('f-state').value.trim();
-  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr,city,state,web:document.getElementById('f-web').value.trim(),lat:null,lng:null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,inHouseShipping:document.getElementById('f-ship').checked,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
+  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr,city,state,web:document.getElementById('f-web').value.trim(),lat:null,lng:null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,inHouseShipping:document.getElementById('f-ship').checked,onLiveAuctioneers:document.getElementById('f-onla').checked,dealerTool:document.getElementById('f-dealer').checked,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
   
   // Geocode if address/city provided
   const geo=await geocode(addr,city,state);
@@ -533,37 +552,174 @@ csvDrop.addEventListener('dragleave',()=>csvDrop.classList.remove('ov'));
 csvDrop.addEventListener('drop',e=>{e.preventDefault();csvDrop.classList.remove('ov');processCSV(e.dataTransfer.files[0]);});
 csvF.addEventListener('change',e=>{if(e.target.files[0])processCSV(e.target.files[0]);e.target.value='';});
 
-function processCSV(file){
-  if(!file)return;const reader=new FileReader();
-  reader.onload=ev=>{
-    const text=ev.target.result,fl=text.split('\n')[0];
-    const sep=fl.split(';').length>fl.split(',').length?';':',';
-    const lines=text.trim().split('\n');
-    const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
-    const guess=cs=>hdrs.find(h=>cs.some(c=>h.toLowerCase().replace(/[\s_-]/g,'').includes(c)));
-    const colO=guess(['ownername','owner','name'])||hdrs[0];
-    const colP=guess(['finalprice','final','price','amount'])||hdrs[1];
-    const byO={};let parsed=0;
-    lines.slice(1).filter(l=>l.trim()).forEach(line=>{
-      const vals=line.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
-      const row={};hdrs.forEach((h,i)=>{row[h]=vals[i]||'';});
-      const owner=(row[colO]||'').trim();
-      const price=parseFloat(String(row[colP]).replace(/[^0-9.\-]/g,''))||0;
-      if(!owner)return;if(!byO[owner])byO[owner]={orders:0,revenue:0};
-      byO[owner].orders++;byO[owner].revenue+=price;parsed++;
-    });
-    let matched=0,unm=[];
-    Object.entries(byO).forEach(([owner,data])=>{
-      const mdv=mdvs.find(m=>m.name.toLowerCase()===owner.toLowerCase());
-      if(mdv){mdv.revenue=Math.round(data.revenue);mdv.orderCount=data.orders;mdv.lastOrder=td();matched++;}else{unm.push(owner);}
-    });
-    sv();renderAll();
-    const resEl=document.getElementById('csv-res');const CL=t().csv;
-    let msg=`✓ ${parsed} ${CL.orders} → ${matched} ${CL.matched}`;
-    if(unm.length)msg+=`<br><span style="color:var(--amb)">⚠ ${unm.length} ${CL.unmatched}: ${unm.slice(0,4).join(', ')}${unm.length>4?'…':''}</span>`;
-    resEl.innerHTML=msg;resEl.style.display='block';
-    toast(CL.updated+' — '+matched+' MDVs');
-  };reader.readAsText(file);
+// CSV mode toggle
+let csvMode='list';
+document.querySelectorAll('.csv-mode-btn').forEach(b=>{b.addEventListener('click',()=>{
+  document.querySelectorAll('.csv-mode-btn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');csvMode=b.dataset.mode;
+});});
+
+function parseCSVText(text){
+  // Proper CSV parser that handles quoted fields with commas
+  function parseLine(line,sep){
+    const vals=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){
+        if(inQ&&line[i+1]==='"'){cur+='"';i++;}
+        else inQ=!inQ;
+      }else if(c===sep&&!inQ){vals.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    vals.push(cur.trim());
+    return vals;
+  }
+  const fl=text.split('\n')[0];
+  // Detect separator: count outside quotes
+  let commas=0,semis=0,inQ=false;
+  for(const c of fl){if(c==='"')inQ=!inQ;if(!inQ){if(c===',')commas++;if(c===';')semis++;}}
+  const sep=semis>commas?';':',';
+  const lines=text.trim().split('\n');
+  const hdrs=parseLine(lines[0],sep).map(h=>h.replace(/^"|"$/g,''));
+  const rows=lines.slice(1).filter(l=>l.trim()).map(line=>{
+    const vals=parseLine(line,sep);
+    const row={};hdrs.forEach((h,i)=>{row[h]=(vals[i]||'').replace(/^"|"$/g,'');});return row;
+  });
+  return{hdrs,rows};
+}
+
+async function processCSV(file){
+  if(!file)return;
+  const text=await file.text();
+  if(csvMode==='list') processCSVList(text);
+  else processCSVRevenue(text);
+}
+
+async function processCSVList(text){
+  const{hdrs,rows}=parseCSVText(text);
+  const guess=cs=>hdrs.find(h=>cs.some(c=>h.toLowerCase().replace(/[\s_-]/g,'').includes(c)));
+  
+  const colName=guess(['auctionhouse','owners','auctionname','name','auction'])||hdrs[0];
+  const colAddr=guess(['address','addr'])||'';
+  const colCity=guess(['city','ville'])||'';
+  const colState=guess(['state','etat','st'])||'';
+  const colLocation=guess(['location'])||'';
+  const colWeb=guess(['website','web','url'])||'';
+  const colSales=guess(['saleslastyear','sales','lotsyear','lotsynearest'])||'';
+  const colOrders=guess(['ordershipped','ordersshipped','orders'])||'';
+  const colShip=guess(['manualshipping','inhouseshipping'])||'';
+  const colPush=guess(['pushcampaign'])||'';
+  const colLA=guess(['liveauctioneers program','liveauctioneersprogram'])||'';
+  const colShipLA=guess(['shipperonliveauctioneers','shipperla'])||'';
+  const colInteg=guess(['integration','widgetapi'])||'';
+  const colDealer=guess(['dealertool'])||'';
+  const colNote=guess(['note','notes','comment'])||'';
+
+  const isYes=v=>{const s=(v||'').trim().toLowerCase();return s==='yes'||s==='oui'||s==='true'||s==='api';};
+
+  const existingMap={};
+  mdvs.forEach(m=>{existingMap[m.name.toLowerCase()]=m;});
+  let added=0,updated=0;
+  const toGeocode=[];
+
+  rows.forEach(row=>{
+    const name=(row[colName]||'').trim();
+    if(!name)return;
+    const addr=colAddr?(row[colAddr]||'').trim():'';
+    const city=colCity?(row[colCity]||'').trim():'';
+    const state=colState?(row[colState]||'').trim():'';
+    const location=colLocation?(row[colLocation]||'').trim():'';
+    const web=colWeb?(row[colWeb]||'').trim():'';
+    const sales=colSales?parseInt(String(row[colSales]).replace(/[^0-9]/g,''))||0:0;
+    const orders=colOrders?parseInt(String(row[colOrders]).replace(/[^0-9]/g,''))||0:0;
+    const inHouse=colShip?isYes(row[colShip]):false;
+    const push=colPush?isYes(row[colPush]):false;
+    const onLA=colLA?isYes(row[colLA]):false;
+    const shipLA=colShipLA?isYes(row[colShipLA]):false;
+    const hasAPI=colInteg?isYes(row[colInteg]):false;
+    const dealer=colDealer?isYes(row[colDealer]):false;
+    const note=colNote?(row[colNote]||'').trim():'';
+    const score=sales>=50?3:sales>=20?2:1;
+
+    // Determine integration level (priority: api > push > live > simple)
+    let integ='';
+    if(hasAPI)integ='api';
+    else if(push)integ='push';
+    else if(shipLA)integ='live';
+    else integ='simple';
+
+    const key=name.toLowerCase();
+    const existing=existingMap[key];
+
+    if(existing){
+      // NEVER overwrite existing data — only enrich empty fields
+      if(inHouse)existing.inHouseShipping=true;
+      if(onLA)existing.onLiveAuctioneers=true;
+      if(dealer)existing.dealerTool=true;
+      if(integ&&integ!=='simple'&&!existing.integ)existing.integ=integ;
+      if(addr&&!existing.addr)existing.addr=addr;
+      if(city&&!existing.city)existing.city=city;
+      if(state&&!existing.state)existing.state=state;
+      if(location&&!existing.location)existing.location=location;
+      if(web&&!existing.web)existing.web=web;
+      if(note&&!existing.notes)existing.notes=note;
+      if(orders&&!existing.orderCount)existing.orderCount=orders;
+      if(score>existing.score)existing.score=score;
+      // If this file has partnership data, upgrade to partenaire
+      if((colPush||colLA||colShipLA)&&existing.status==='prospect')existing.status='partenaire';
+      updated++;
+    }else{
+      const m={id:u(),name,addr,city,state,location,web,lat:null,lng:null,
+        status:(colPush||colLA||colShipLA)?'partenaire':'prospect',
+        integ,inHouseShipping:inHouse,onLiveAuctioneers:onLA,dealerTool:dealer,
+        score,action:'',due:'',reason:'',rd:'',retry:'',
+        contact:{n:'',e:'',p:''},notes:note||( sales?'Sales: '+sales:''),
+        revenue:0,lastOrder:'',orderCount:orders};
+      mdvs.push(m);existingMap[key]=m;toGeocode.push(m);added++;
+    }
+  });
+
+  sv();renderAll();
+  const resEl=document.getElementById('csv-res');
+  resEl.innerHTML=`✓ ${added} ${lang==='en'?'added':'ajoutés'}, ${updated} ${lang==='en'?'updated':'mis à jour'}. ${lang==='en'?'Geocoding':'Géocodage'}...`;
+  resEl.style.display='block';
+
+  // Geocode new entries
+  let geocoded=0;
+  for(let i=0;i<toGeocode.length;i++){
+    const m=toGeocode[i];
+    const geo=await geocode(m.addr||'',m.city||'',m.state||'');
+    if(geo){m.lat=geo.lat;m.lng=geo.lng;geocoded++;}
+    if(i%50===0&&i>0){sv();renderAll();resEl.innerHTML=`${lang==='en'?'Geocoding':'Géocodage'}... ${i}/${toGeocode.length}`;}
+  }
+  sv();renderAll();
+  resEl.innerHTML=`✓ ${added} ${lang==='en'?'added':'ajoutés'}, ${updated} ${lang==='en'?'updated':'mis à jour'}, ${geocoded} ${lang==='en'?'geocoded':'géocodés'}`;
+  toast((lang==='en'?'Import done':'Import terminé'));
+}
+
+function processCSVRevenue(text){
+  const{hdrs,rows}=parseCSVText(text);
+  const guess=cs=>hdrs.find(h=>cs.some(c=>h.toLowerCase().replace(/[\s_-]/g,'').includes(c)));
+  const colO=guess(['ownername','owner','name'])||hdrs[0];
+  const colP=guess(['finalprice','final','price','amount'])||hdrs[1];
+  const byO={};let parsed=0;
+  rows.forEach(row=>{
+    const owner=(row[colO]||'').trim();
+    const price=parseFloat(String(row[colP]).replace(/[^0-9.\-]/g,''))||0;
+    if(!owner)return;if(!byO[owner])byO[owner]={orders:0,revenue:0};
+    byO[owner].orders++;byO[owner].revenue+=price;parsed++;
+  });
+  let matched=0,unm=[];
+  Object.entries(byO).forEach(([owner,data])=>{
+    const mdv=mdvs.find(m=>m.name.toLowerCase()===owner.toLowerCase());
+    if(mdv){mdv.revenue=Math.round(data.revenue);mdv.orderCount=data.orders;mdv.lastOrder=td();matched++;}else{unm.push(owner);}
+  });
+  sv();renderAll();
+  const resEl=document.getElementById('csv-res');const CL=t().csv;
+  let msg=`✓ ${parsed} ${CL.orders} → ${matched} ${CL.matched}`;
+  if(unm.length)msg+=`<br><span style="color:var(--amb)">⚠ ${unm.length} ${CL.unmatched}: ${unm.slice(0,4).join(', ')}${unm.length>4?'…':''}</span>`;
+  resEl.innerHTML=msg;resEl.style.display='block';
+  toast(CL.updated+' — '+matched+' MDVs');
 }
 
 // ═══ EXPORT / IMPORT ═══
@@ -574,50 +730,11 @@ document.getElementById('sb-exp').addEventListener('click',()=>{
 });
 document.getElementById('json-imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);
-    if(d.mdvs&&Array.isArray(d.mdvs)){
-      const existingMap={};
-      mdvs.forEach(m=>{existingMap[m.name.toLowerCase()]=m;});
-      let added=0,updated=0;
-      const toGeocode=[];
-
-      d.mdvs.forEach(im=>{
-        const key=im.name.toLowerCase();
-        const existing=existingMap[key];
-        if(existing){
-          // Merge: update fields from import without overwriting pipeline/notes/contact
-          if(im.inHouseShipping)existing.inHouseShipping=im.inHouseShipping;
-          if(im.addr&&!existing.addr)existing.addr=im.addr;
-          if(im.city&&!existing.city)existing.city=im.city;
-          if(im.state&&!existing.state)existing.state=im.state;
-          if(im.web&&!existing.web)existing.web=im.web;
-          if(im.notes){existing.notes=existing.notes?(existing.notes+' | '+im.notes):im.notes;}
-          if(im.score&&im.score>existing.score)existing.score=im.score;
-          updated++;
-        }else{
-          mdvs.push(im);
-          existingMap[key]=im;
-          toGeocode.push(im);
-          added++;
-        }
-      });
-
-      sv();renderAll();
-      toast((lang==='en'?`${added} added, ${updated} updated, geocoding...`:`${added} ajoutés, ${updated} mis à jour, géocodage...`));
-
-      // Geocode new entries in background
-      let geocoded=0;
-      for(let i=0;i<toGeocode.length;i++){
-        const m=toGeocode[i];
-        if(m.lat&&m.lng&&m.lat>10&&m.lat<60)continue;
-        const geo=await geocode(m.addr||'',m.city||'',m.state||'');
-        if(geo){m.lat=geo.lat;m.lng=geo.lng;geocoded++;}
-        if(i%50===0&&i>0){sv();renderAll();toast((lang==='en'?`Geocoding... ${i}/${toGeocode.length}`:`Géocodage... ${i}/${toGeocode.length}`));}
-      }
-      sv();renderAll();
-      toast((lang==='en'?`Done: ${added} added, ${updated} updated, ${geocoded} geocoded`:`Terminé : ${added} ajoutés, ${updated} mis à jour, ${geocoded} géocodés`));
-    }else toast('Invalid',1);
-  }catch(err){console.error(err);toast('Invalid',1);}e.target.value='';};r.readAsText(f);
+  if(!confirm(lang==='en'?'Restore backup? This will replace ALL current data.':'Restaurer la sauvegarde ? Ceci remplacera TOUTES les données actuelles.'))return;
+  const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);
+    if(d.mdvs&&Array.isArray(d.mdvs)){mdvs=d.mdvs;sv();renderAll();toast((lang==='en'?'Restored ':'Restauré ')+mdvs.length+' MDVs');}
+    else toast('Invalid',1);
+  }catch{toast('Invalid',1);}e.target.value='';};r.readAsText(f);
 });
 
 // ═══ TOAST + KB ═══
