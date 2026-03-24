@@ -486,8 +486,8 @@ function openMo(m){
 window.openMo=openMo;
 function closeMo(){mo.classList.remove('open');}
 
-// Geocode — Google API (key restricted to ahtracker.vercel.app + localhost)
-const GOOGLE_GEOCODE_KEY = 'AIzaSyCYaUXEaN9lqKtn4R7zlG-YlNCY4DNTBiI';
+// Geocode — Google API (set key via environment)
+const GOOGLE_GEOCODE_KEY = '';
 async function geocode(addr,city,state){
   if(!GOOGLE_GEOCODE_KEY||(!addr&&!city))return null;
   const parts=[addr,city,state,'USA'].filter(Boolean).join(', ');
