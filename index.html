@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CRM — Auction Houses</title>
+<title>AH Tracker</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -123,7 +123,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .lt tr:last-child td{border-bottom:none}
 
 /* MODAL */
-.mo{display:none;position:fixed;inset:0;background:rgba(28,25,23,.3);backdrop-filter:blur(3px);z-index:100;align-items:center;justify-content:center}
+.mo{display:none;position:fixed;inset:0;background:rgba(28,25,23,.3);backdrop-filter:blur(3px);z-index:10000;align-items:center;justify-content:center}
 .mo.open{display:flex}
 .mo-box{background:var(--card);border:1px solid var(--brd);border-radius:var(--rl);padding:24px;width:540px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.1);animation:mIn .2s ease-out}
 @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:none}}
@@ -150,7 +150,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .csv-drop span{font-size:10px;color:var(--t3)}
 .csv-res{margin-top:12px;padding:10px;background:var(--grn-bg);border-radius:var(--r);font-size:12px;color:var(--grn);font-weight:500}
 
-.toast{position:fixed;bottom:16px;right:16px;padding:8px 16px;border-radius:var(--r);font-size:11px;font-weight:500;color:#fff;background:var(--nv);box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(50px);opacity:0;transition:all .3s;z-index:200}
+.toast{position:fixed;bottom:16px;right:16px;padding:8px 16px;border-radius:var(--r);font-size:11px;font-weight:500;color:#fff;background:var(--nv);box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(50px);opacity:0;transition:all .3s;z-index:10001}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.err{background:var(--red)}
 
@@ -163,7 +163,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <div class="auth" id="auth">
 <div class="auth-box">
 <div class="br">ThePackengers</div>
-<h1 style="font-family:'Playfair Display',serif">Auction Houses</h1>
+<h1 style="font-family:'Playfair Display',serif">AH Tracker</h1>
 <p>CRM — Restricted access</p>
 <input type="password" class="auth-in" id="auth-pw" placeholder="• • • • • •" autofocus>
 <div class="auth-err" id="auth-err"></div>
@@ -184,7 +184,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 </nav>
 
 <div class="main">
-<div class="topbar"><div><div class="br">ThePackengers</div><h1 id="page-title">Auction Houses</h1></div><button class="btn-p" id="btn-add"></button></div>
+<div class="topbar"><div><div class="br">ThePackengers</div><h1 id="page-title">AH <em style="font-style:normal;color:var(--amb)">Tracker</em></h1></div><button class="btn-p" id="btn-add"></button></div>
 <div class="alerts" id="alerts"></div>
 <div class="tb">
 <div style="display:flex;gap:3px" id="pills"></div>
@@ -236,7 +236,7 @@ const SCOLS={prospect:['var(--blu-bg)','var(--blu)','#1D4ED8'],contacte:['var(--
 // ═══ i18n ═══
 const T={
 en:{
-  pageTitle:'Auction Houses',addBtn:'+ New',search:'Search...',
+  pageTitle:'AH Tracker',addBtn:'+ New',search:'Search...',
   pipe:{prospect:'Prospect',contacte:'Contacted',rdv:'Meeting scheduled',demo:'Demo done',partenaire:'Partner',refuse:'Refused',dormant:'Cold'},
   integ:{simple:'Simple partner',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Too expensive',concurrent:'Existing provider',timing:'Bad timing',interet:'Not interested',volume:'Volume too low',autre:'Other'},
@@ -249,7 +249,7 @@ en:{
   all:'All',ord:'orders',rev:'Rev',perMonth:'/mo',score:'Score'
 },
 fr:{
-  pageTitle:'Maisons de Ventes',addBtn:'+ Nouveau',search:'Rechercher...',
+  pageTitle:'AH Tracker',addBtn:'+ Nouveau',search:'Rechercher...',
   pipe:{prospect:'Prospect',contacte:'Contacté',rdv:'RDV planifié',demo:'Démo faite',partenaire:'Partenaire',refuse:'Refusé',dormant:'Cold'},
   integ:{simple:'Simple partenaire',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Trop cher',concurrent:'Prestataire en place',timing:'Pas le bon moment',interet:'Pas intéressé',volume:'Volume trop faible',autre:'Autre'},
@@ -486,14 +486,15 @@ function openMo(m){
 window.openMo=openMo;
 function closeMo(){mo.classList.remove('open');}
 
-// Geocode address using Nominatim (free, no API key)
+// Geocode — Google API (key restricted to ahtracker.vercel.app + localhost)
+const GOOGLE_GEOCODE_KEY = 'AIzaSyCYaUXEaN9lqKtn4R7zlG-YlNCY4DNTBiI';
 async function geocode(addr,city,state){
-  if(!addr&&!city)return null;
-  const q=encodeURIComponent([addr,city,state,'USA'].filter(Boolean).join(', '));
+  if(!GOOGLE_GEOCODE_KEY||(!addr&&!city))return null;
+  const parts=[addr,city,state,'USA'].filter(Boolean).join(', ');
   try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
+    const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(parts)}&key=${GOOGLE_GEOCODE_KEY}`);
     const d=await r.json();
-    if(d&&d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+    if(d.status==='OK'&&d.results&&d.results[0]){const loc=d.results[0].geometry.location;return{lat:loc.lat,lng:loc.lng};}
   }catch(e){}
   return null;
 }
@@ -569,7 +570,7 @@ function processCSV(file){
 // ═══ EXPORT / IMPORT ═══
 document.getElementById('sb-exp').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify({_app:'crm-ah',_v:3,_at:new Date().toISOString(),mdvs},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='crm-auction-houses-'+td()+'.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ah-tracker-'+td()+'.json';a.click();
   toast((lang==='en'?'Exported ':'Exporté ')+mdvs.length);
 });
 document.getElementById('json-imp').addEventListener('change',e=>{
