@@ -576,27 +576,46 @@ document.getElementById('json-imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);
     if(d.mdvs&&Array.isArray(d.mdvs)){
-      const existingNames=new Set(mdvs.map(m=>m.name.toLowerCase()));
-      const newOnes=d.mdvs.filter(m=>!existingNames.has(m.name.toLowerCase()));
-      const skipped=d.mdvs.length-newOnes.length;
+      const existingMap={};
+      mdvs.forEach(m=>{existingMap[m.name.toLowerCase()]=m;});
+      let added=0,updated=0;
+      const toGeocode=[];
 
-      // Add all immediately (with existing coords)
-      newOnes.forEach(m=>{mdvs.push(m);existingNames.add(m.name.toLowerCase());});
+      d.mdvs.forEach(im=>{
+        const key=im.name.toLowerCase();
+        const existing=existingMap[key];
+        if(existing){
+          // Merge: update fields from import without overwriting pipeline/notes/contact
+          if(im.inHouseShipping)existing.inHouseShipping=im.inHouseShipping;
+          if(im.addr&&!existing.addr)existing.addr=im.addr;
+          if(im.city&&!existing.city)existing.city=im.city;
+          if(im.state&&!existing.state)existing.state=im.state;
+          if(im.web&&!existing.web)existing.web=im.web;
+          if(im.notes){existing.notes=existing.notes?(existing.notes+' | '+im.notes):im.notes;}
+          if(im.score&&im.score>existing.score)existing.score=im.score;
+          updated++;
+        }else{
+          mdvs.push(im);
+          existingMap[key]=im;
+          toGeocode.push(im);
+          added++;
+        }
+      });
+
       sv();renderAll();
-      toast((lang==='en'?`Imported ${newOnes.length}, geocoding...`:`Importé ${newOnes.length}, géocodage...`));
+      toast((lang==='en'?`${added} added, ${updated} updated, geocoding...`:`${added} ajoutés, ${updated} mis à jour, géocodage...`));
 
-      // Geocode in background
+      // Geocode new entries in background
       let geocoded=0;
-      for(let i=0;i<newOnes.length;i++){
-        const m=newOnes[i];
-        if(m.lat&&m.lng&&m.lat>10&&m.lat<60)continue; // skip if already has valid US coords
+      for(let i=0;i<toGeocode.length;i++){
+        const m=toGeocode[i];
+        if(m.lat&&m.lng&&m.lat>10&&m.lat<60)continue;
         const geo=await geocode(m.addr||'',m.city||'',m.state||'');
         if(geo){m.lat=geo.lat;m.lng=geo.lng;geocoded++;}
-        // Update progress every 50
-        if(i%50===0&&i>0){sv();renderAll();toast((lang==='en'?`Geocoding... ${i}/${newOnes.length}`:`Géocodage... ${i}/${newOnes.length}`));}
+        if(i%50===0&&i>0){sv();renderAll();toast((lang==='en'?`Geocoding... ${i}/${toGeocode.length}`:`Géocodage... ${i}/${toGeocode.length}`));}
       }
       sv();renderAll();
-      toast((lang==='en'?`Done: ${newOnes.length} added, ${geocoded} geocoded, ${skipped} skipped`:`Terminé : ${newOnes.length} ajoutés, ${geocoded} géocodés, ${skipped} ignorés`));
+      toast((lang==='en'?`Done: ${added} added, ${updated} updated, ${geocoded} geocoded`:`Terminé : ${added} ajoutés, ${updated} mis à jour, ${geocoded} géocodés`));
     }else toast('Invalid',1);
   }catch(err){console.error(err);toast('Invalid',1);}e.target.value='';};r.readAsText(f);
 });
