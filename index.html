@@ -204,6 +204,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <input type="hidden" id="f-lat"><input type="hidden" id="f-lng">
 <div class="fsep" id="lbl-pipe-sep"></div>
 <div class="fr fr2"><div class="fg"><label id="lbl-status"></label><select id="f-status"></select></div><div class="fg"><label id="lbl-integ"></label><select id="f-integ"><option value="">—</option></select></div></div>
+<div class="fg" style="display:flex;align-items:center;gap:8px;margin:4px 0 8px"><input type="checkbox" id="f-ship" style="width:auto;margin:0"><label for="f-ship" style="font-size:12px;color:var(--t2);text-transform:none;letter-spacing:0;cursor:pointer" id="lbl-ship">In-house shipping (not eligible)</label></div>
 <div class="fsep" id="lbl-next-sep"></div>
 <div class="fr fr2"><div class="fg"><label>Action</label><input id="f-action"></div><div class="fg"><label id="lbl-due"></label><input id="f-due" type="date"></div></div>
 <div class="fsep" id="fsep-ref" style="display:none"></div>
@@ -288,6 +289,7 @@ function applyLang(){
   document.getElementById('btn-save').textContent=L.modal.save;
   document.getElementById('btn-cancel').textContent=L.modal.cancel;
   document.getElementById('btn-del').textContent=L.modal.del;
+  document.getElementById('lbl-ship').textContent=lang==='en'?'In-house shipping (not eligible)':'Shipping interne (non éligible)';
   document.getElementById('csv-title').textContent=L.csv.title;
   document.getElementById('csv-desc').textContent=L.csv.desc;
   document.getElementById('csv-drop-text').textContent=L.csv.drop;
@@ -340,6 +342,7 @@ function od(d){return d&&d<td()}
 function stars(n){return'★'.repeat(n||0)+'☆'.repeat(5-(n||0))}
 function fil(){let r=[...mdvs];if(fSt!=='all')r=r.filter(m=>m.status===fSt);if(fQ){const q=fQ.toLowerCase();r=r.filter(m=>m.name.toLowerCase().includes(q)||(m.city||'').toLowerCase().includes(q)||(m.state||'').toLowerCase().includes(q));}return r;}
 function ibadge(v){if(!v)return'';const L=t();const cs={simple:['var(--gry-bg)','var(--gry)'],push:['var(--blu-bg)','var(--blu)'],live:['var(--pur-bg)','var(--pur)'],api:['var(--grn-bg)','var(--grn)']};const c=cs[v]||cs.simple;return`<span class="kc-badge" style="background:${c[0]};color:${c[1]}">${L.integ[v]||v}</span>`;}
+function shipBadge(m){if(!m.inHouseShipping)return'';return`<span class="kc-badge" style="background:var(--red-bg);color:var(--red)">🚫 ${lang==='en'?'In-house shipping':'Shipping interne'}</span>`;}
 function borderColor(st){return SCOLS[st]?SCOLS[st][2]:'#78716C';}
 
 // ═══ ALERTS ═══
@@ -401,7 +404,7 @@ function kcard(m,bc){
   const L=t(),o=od(m.due);
   let h=`<div class="kc" style="border-left:3px solid ${bc}" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">`;
   h+=`<div class="kc-name">${esc(m.name)}</div><div class="kc-loc">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</div>`;
-  h+=`<div style="display:flex;align-items:center;gap:4px"><span class="kc-stars">${stars(m.score)}</span>${ibadge(m.integ)}</div>`;
+  h+=`<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap"><span class="kc-stars">${stars(m.score)}</span>${ibadge(m.integ)}${shipBadge(m)}</div>`;
   if(m.action||m.due){h+=`<div class="kc-next"><div class="kc-nl">${L.modal.nextSep}</div>`;if(m.action)h+=`<div class="kc-na">${esc(m.action)}</div>`;if(m.due)h+=`<div class="kc-nd ${o?'od':'ok'}">${o?'⚠ ':''} ${m.due}</div>`;h+=`</div>`;}
   if(m.status==='partenaire'&&m.revenue)h+=`<div class="kc-rev">${fmt$(m.revenue)}${t().perMonth} · ${m.orderCount||0} ${t().ord}</div>`;
   if(m.notes)h+=`<div class="kc-note">${esc(m.notes.slice(0,55))}${m.notes.length>55?'…':''}</div>`;
@@ -411,13 +414,22 @@ function kcard(m,bc){
 // ═══ MAP ═══
 let lmap=null,markers=[];
 const MC={prospect:'#1D4ED8',contacte:'#6D28D9',rdv:'#B45309',demo:'#92400E',partenaire:'#166534',refuse:'#B91C1C',dormant:'#78716C'};
+const SHIP_COLOR='#D946EF';
 function renderMap(){
   const items=fil().filter(m=>m.lat&&m.lng),L=t();
   if(!lmap){lmap=L_map('map',{zoomControl:true}).setView([40.75,-73.97],7);L_tile('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',maxZoom:18}).addTo(lmap);
-    const leg=L_ctrl({position:'bottomleft'});leg.onAdd=function(){const d=L_DomUtil.create('div');d.style.cssText='background:rgba(255,255,255,.92);backdrop-filter:blur(6px);padding:7px 12px;border-radius:14px;border:1px solid #E8E6E1;font-family:Outfit;font-size:9px;display:flex;gap:10px;color:#57534E';d.innerHTML=Object.entries(MC).map(([k,c])=>`<span style="display:flex;align-items:center;gap:3px"><i style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block"></i>${k}</span>`).join('');return d;};leg.addTo(lmap);}
+    const leg=L_ctrl({position:'bottomleft'});leg.onAdd=function(){const d=L_DomUtil.create('div');d.style.cssText='background:rgba(255,255,255,.92);backdrop-filter:blur(6px);padding:7px 12px;border-radius:14px;border:1px solid #E8E6E1;font-family:Outfit;font-size:9px;display:flex;gap:10px;color:#57534E;flex-wrap:wrap';d.innerHTML=Object.entries({Prospect:'#1D4ED8',Contacted:'#6D28D9','RDV/Demo':'#B45309',Partner:'#166534',Refused:'#B91C1C',Cold:'#78716C','In-house shipping':'#D946EF'}).map(([k,c])=>`<span style="display:flex;align-items:center;gap:3px"><i style="width:8px;height:8px;border-radius:${k==='In-house shipping'?'2px':'50%'};background:${c};display:inline-block;${k==='In-house shipping'?'opacity:.5':''}"></i>${k}</span>`).join('');return d;};leg.addTo(lmap);}
   markers.forEach(m=>lmap.removeLayer(m));markers=[];
   if(!items.length){lmap.setView([40.75,-73.97],7);return;}
-  items.forEach(m=>{const mk=L_circleMarker([m.lat,m.lng],{radius:Math.max(6,4+(m.score||1)*1.8),fillColor:MC[m.status]||'#78716C',color:'#fff',weight:2,fillOpacity:.85}).addTo(lmap);mk.bindPopup(`<div class="mpop-name">${esc(m.name)}</div><div class="mpop-d"><strong>${L.pipe[m.status]}</strong>${m.integ?' · '+L.integ[m.integ]:''}<br>${stars(m.score)}<br>${m.revenue?fmt$(m.revenue)+L.perMonth:''}</div><button class="mpop-btn" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">${L.map.edit}</button>`,{maxWidth:240});mk.bindTooltip(m.name,{direction:'top',offset:[0,-6]});markers.push(mk);});
+  items.forEach(m=>{
+    const isShip=m.inHouseShipping;
+    const color=isShip?SHIP_COLOR:(MC[m.status]||'#78716C');
+    const opacity=isShip?0.4:0.85;
+    const mk=L_circleMarker([m.lat,m.lng],{radius:Math.max(5,3+(m.score||1)*1.5),fillColor:color,color:isShip?'#D946EF':'#fff',weight:isShip?1.5:2,fillOpacity:opacity,dashArray:isShip?'3,3':''}).addTo(lmap);
+    const shipLabel=isShip?`<br><strong style="color:#D946EF">${lang==='en'?'⚠ In-house shipping':'⚠ Shipping interne'}</strong>`:'';
+    mk.bindPopup(`<div class="mpop-name">${esc(m.name)}</div><div class="mpop-d"><strong>${L.pipe[m.status]}</strong>${m.integ?' · '+L.integ[m.integ]:''}${shipLabel}<br>${stars(m.score)}<br>${m.revenue?fmt$(m.revenue)+L.perMonth:''}</div><button class="mpop-btn" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">${L.map.edit}</button>`,{maxWidth:240});
+    mk.bindTooltip(m.name+(isShip?' (in-house)':''),{direction:'top',offset:[0,-6]});markers.push(mk);
+  });
   lmap.fitBounds(L_featureGroup(markers).getBounds().pad(.15));setTimeout(()=>lmap.invalidateSize(),100);
 }
 const L_map=L.map,L_tile=L.tileLayer,L_ctrl=L.control,L_DomUtil=L.DomUtil,L_circleMarker=L.circleMarker,L_featureGroup=L.featureGroup;
@@ -457,7 +469,7 @@ function openMo(m){
   document.getElementById('f-lng').value=e&&m.lng?m.lng:'';
   document.getElementById('f-status').value=e?m.status:'prospect';
   document.getElementById('f-integ').value=e?m.integ||'':'';
-  document.getElementById('f-action').value=e?m.action||'':'';
+  document.getElementById('f-ship').checked=e?!!m.inHouseShipping:false;  document.getElementById('f-action').value=e?m.action||'':'';
   document.getElementById('f-due').value=e?m.due||'':'';
   document.getElementById('f-reason').value=e?m.reason||'':'';
   document.getElementById('f-rd').value=e?m.rd||'':'';
@@ -492,7 +504,7 @@ document.getElementById('btn-save').addEventListener('click',async()=>{
   const addr=document.getElementById('f-addr').value.trim();
   const city=document.getElementById('f-city').value.trim();
   const state=document.getElementById('f-state').value.trim();
-  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr,city,state,web:document.getElementById('f-web').value.trim(),lat:null,lng:null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
+  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr,city,state,web:document.getElementById('f-web').value.trim(),lat:null,lng:null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,inHouseShipping:document.getElementById('f-ship').checked,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
   
   // Geocode if address/city provided
   const geo=await geocode(addr,city,state);
@@ -562,7 +574,19 @@ document.getElementById('sb-exp').addEventListener('click',()=>{
 });
 document.getElementById('json-imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.mdvs){mdvs=d.mdvs;sv();renderAll();toast((lang==='en'?'Imported ':'Importé ')+mdvs.length);}else toast('Invalid',1);}catch{toast('Invalid',1);}e.target.value='';};r.readAsText(f);
+  const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);
+    if(d.mdvs&&Array.isArray(d.mdvs)){
+      // Merge: add new MDVs, skip existing (match by name lowercase)
+      const existingNames=new Set(mdvs.map(m=>m.name.toLowerCase()));
+      let added=0,skipped=0;
+      d.mdvs.forEach(m=>{
+        if(existingNames.has(m.name.toLowerCase())){skipped++;}
+        else{mdvs.push(m);existingNames.add(m.name.toLowerCase());added++;}
+      });
+      sv();renderAll();
+      toast((lang==='en'?`Merged: ${added} added, ${skipped} skipped (duplicates)`:`Fusion : ${added} ajoutés, ${skipped} ignorés (doublons)`));
+    }else toast('Invalid',1);
+  }catch{toast('Invalid',1);}e.target.value='';};r.readAsText(f);
 });
 
 // ═══ TOAST + KB ═══
