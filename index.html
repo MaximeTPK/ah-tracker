@@ -236,10 +236,10 @@ const SCOLS={prospect:['var(--blu-bg)','var(--blu)','#1D4ED8'],contacte:['var(--
 const T={
 en:{
   pageTitle:'Auction Houses',addBtn:'+ New',search:'Search...',
-  pipe:{prospect:'Prospect',contacte:'Contacted',rdv:'Meeting scheduled',demo:'Demo done',partenaire:'Partner',refuse:'Refused',dormant:'Dormant'},
+  pipe:{prospect:'Prospect',contacte:'Contacted',rdv:'Meeting scheduled',demo:'Demo done',partenaire:'Partner',refuse:'Refused',dormant:'Cold'},
   integ:{simple:'Simple partner',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Too expensive',concurrent:'Existing provider',timing:'Bad timing',interet:'Not interested',volume:'Volume too low',autre:'Other'},
-  alerts:{overdue:'overdue',retry:'ready to retry',partners:'partners',revenue:'Revenue',dormant:'dormant'},
+  alerts:{overdue:'overdue',retry:'ready to retry',partners:'partners',revenue:'Revenue',dormant:'cold'},
   modal:{newTitle:'New auction house',editTitle:'Edit auction house',name:'Name',addr:'Address',city:'City',state:'State',web:'Website',pipeSep:'Pipeline & integration',status:'Status',integ:'Integration',nextSep:'Next action',action:'Action',due:'Due date',refSep:'Refusal details',reason:'Reason',retry:'Retry date',refNotes:'Refusal notes',contactSep:'Primary contact',cn:'Name',cp:'Phone',save:'Save',cancel:'Cancel',del:'Delete'},
   csv:{title:'Import revenue CSV',desc:'Format: Owner Name, Final Price — one row per order. Matches on Owner Name.',drop:'Drop CSV here or click',hint:'Auto-detects separator',close:'Close',orders:'orders',matched:'matched',unmatched:'unmatched',updated:'Revenue updated'},
   kanban:{empty:'Empty',noPartners:'No active partners',none:'None',readyRetry:'Ready to retry'},
@@ -249,10 +249,10 @@ en:{
 },
 fr:{
   pageTitle:'Maisons de Ventes',addBtn:'+ Nouveau',search:'Rechercher...',
-  pipe:{prospect:'Prospect',contacte:'Contacté',rdv:'RDV planifié',demo:'Démo faite',partenaire:'Partenaire',refuse:'Refusé',dormant:'Dormant'},
+  pipe:{prospect:'Prospect',contacte:'Contacté',rdv:'RDV planifié',demo:'Démo faite',partenaire:'Partenaire',refuse:'Refusé',dormant:'Cold'},
   integ:{simple:'Simple partenaire',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Trop cher',concurrent:'Prestataire en place',timing:'Pas le bon moment',interet:'Pas intéressé',volume:'Volume trop faible',autre:'Autre'},
-  alerts:{overdue:'en retard',retry:'à relancer',partners:'partenaires',revenue:'CA',dormant:'dormant'},
+  alerts:{overdue:'en retard',retry:'à relancer',partners:'partenaires',revenue:'CA',dormant:'cold'},
   modal:{newTitle:'Nouvelle maison de vente',editTitle:'Modifier la maison de vente',name:'Nom',addr:'Adresse',city:'Ville',state:'État',web:'Site web',pipeSep:'Pipeline & intégration',status:'Statut',integ:'Intégration',nextSep:'Prochaine action',action:'Action',due:'Date échéance',refSep:'Détails du refus',reason:'Raison',retry:'Date de relance',refNotes:'Notes refus',contactSep:'Contact principal',cn:'Nom',cp:'Téléphone',save:'Enregistrer',cancel:'Annuler',del:'Supprimer'},
   csv:{title:'Import CSV revenus',desc:'Format : Owner Name, Final Price — une ligne par commande. Match sur Owner Name.',drop:'Glisser un CSV ici ou cliquer',hint:'Séparateur auto-détecté',close:'Fermer',orders:'commandes',matched:'matchés',unmatched:'non matchés',updated:'CA mis à jour'},
   kanban:{empty:'Vide',noPartners:'Aucun partenaire actif',none:'Aucun',readyRetry:'Prêt à relancer'},
@@ -353,7 +353,7 @@ function renderAlerts(){
   let h='';
   if(ov.length)h+=`<span class="al" style="background:var(--red-bg);color:var(--red)">⚠ ${ov.length} ${L.alerts.overdue}</span>`;
   if(rt)h+=`<span class="al" style="background:var(--amb-bg);color:var(--amb)">↻ ${rt} ${L.alerts.retry}</span>`;
-  if(dormant)h+=`<span class="al" style="background:var(--gry-bg);color:var(--gry)">💤 ${dormant} ${L.alerts.dormant}</span>`;
+  if(dormant)h+=`<span class="al" style="background:var(--gry-bg);color:var(--gry)">❄️ ${dormant} ${L.alerts.dormant}</span>`;
   h+=`<span class="al" style="background:var(--grn-bg);color:var(--grn)">${pts.length} ${L.alerts.partners}</span>`;
   if(rev)h+=`<span class="al" style="background:var(--blu-bg);color:var(--blu)">${L.alerts.revenue}: ${fmt$(rev)}${L.perMonth}</span>`;
   el.innerHTML=h;
@@ -389,7 +389,7 @@ function renderKanban(){
     h+=`</div></div>`;
   }
   if(fSt==='all'||fSt==='dormant'){
-    h+=`<div class="bzs"><div class="bzt">💤 ${L.pipe.dormant} <span class="kcn" style="background:var(--gry-bg);color:var(--gry)">${dor.length}</span></div><div class="bzc">`;
+    h+=`<div class="bzs"><div class="bzt">❄️ ${L.pipe.dormant} <span class="kcn" style="background:var(--gry-bg);color:var(--gry)">${dor.length}</span></div><div class="bzc">`;
     dor.forEach(m=>{h+=`<div class="bzcard" style="border-left:3px solid var(--gry)" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))"><div class="kc-name">${esc(m.name)}</div><div class="kc-loc">${m.integ?L.integ[m.integ]:''}</div>${m.revenue?`<div class="kc-rev">${fmt$(m.revenue)}/mo</div>`:''}</div>`;});
     if(!dor.length)h+=`<div class="bz-empty">${L.kanban.none}</div>`;
     h+=`</div></div>`;
