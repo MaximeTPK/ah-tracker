@@ -201,7 +201,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 <div class="fr fr2"><div class="fg"><label id="lbl-name"></label><input id="f-name"></div><div class="fg"><label>Score (1-5)</label><select id="f-score"><option value="1">★</option><option value="2">★★</option><option value="3" selected>★★★</option><option value="4">★★★★</option><option value="5">★★★★★</option></select></div></div>
 <div class="fg"><label id="lbl-addr"></label><input id="f-addr"></div>
 <div class="fr fr3"><div class="fg"><label id="lbl-city"></label><input id="f-city"></div><div class="fg"><label id="lbl-state"></label><input id="f-state"></div><div class="fg"><label>Website</label><input id="f-web"></div></div>
-<div class="fr fr2"><div class="fg"><label>Latitude</label><input id="f-lat" type="number" step="0.0001"></div><div class="fg"><label>Longitude</label><input id="f-lng" type="number" step="0.0001"></div></div>
+<input type="hidden" id="f-lat"><input type="hidden" id="f-lng">
 <div class="fsep" id="lbl-pipe-sep"></div>
 <div class="fr fr2"><div class="fg"><label id="lbl-status"></label><select id="f-status"></select></div><div class="fg"><label id="lbl-integ"></label><select id="f-integ"><option value="">—</option></select></div></div>
 <div class="fsep" id="lbl-next-sep"></div>
@@ -239,22 +239,26 @@ en:{
   pipe:{prospect:'Prospect',contacte:'Contacted',rdv:'Meeting scheduled',demo:'Demo done',partenaire:'Partner',refuse:'Refused',dormant:'Dormant'},
   integ:{simple:'Simple partner',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Too expensive',concurrent:'Existing provider',timing:'Bad timing',interet:'Not interested',volume:'Volume too low',autre:'Other'},
-  alerts:{overdue:'overdue',retry:'ready to retry',partners:'partners',revenue:'Revenue'},
-  modal:{newTitle:'New auction house',editTitle:'Edit auction house',name:'Name',addr:'Address',city:'City',state:'State',pipeSep:'Pipeline & integration',status:'Status',integ:'Integration',nextSep:'Next action',due:'Due date',refSep:'Refusal details',reason:'Reason',retry:'Retry date',refNotes:'Refusal notes',contactSep:'Primary contact',cn:'Name',cp:'Phone',save:'Save',cancel:'Cancel',del:'Delete'},
-  csv:{title:'Import revenue CSV',desc:'Format: Owner Name, Final Price — one row per order. Matches on Owner Name.',drop:'Drop CSV here or click',hint:'Auto-detects separator',close:'Close'},
+  alerts:{overdue:'overdue',retry:'ready to retry',partners:'partners',revenue:'Revenue',dormant:'dormant'},
+  modal:{newTitle:'New auction house',editTitle:'Edit auction house',name:'Name',addr:'Address',city:'City',state:'State',web:'Website',pipeSep:'Pipeline & integration',status:'Status',integ:'Integration',nextSep:'Next action',action:'Action',due:'Due date',refSep:'Refusal details',reason:'Reason',retry:'Retry date',refNotes:'Refusal notes',contactSep:'Primary contact',cn:'Name',cp:'Phone',save:'Save',cancel:'Cancel',del:'Delete'},
+  csv:{title:'Import revenue CSV',desc:'Format: Owner Name, Final Price — one row per order. Matches on Owner Name.',drop:'Drop CSV here or click',hint:'Auto-detects separator',close:'Close',orders:'orders',matched:'matched',unmatched:'unmatched',updated:'Revenue updated'},
   kanban:{empty:'Empty',noPartners:'No active partners',none:'None',readyRetry:'Ready to retry'},
-  all:'All',ord:'Ord',rev:'Rev'
+  map:{edit:'Edit',noResults:'No results'},
+  list:{noResults:'No results'},
+  all:'All',ord:'orders',rev:'Rev',perMonth:'/mo',score:'Score'
 },
 fr:{
   pageTitle:'Maisons de Ventes',addBtn:'+ Nouveau',search:'Rechercher...',
   pipe:{prospect:'Prospect',contacte:'Contacté',rdv:'RDV planifié',demo:'Démo faite',partenaire:'Partenaire',refuse:'Refusé',dormant:'Dormant'},
   integ:{simple:'Simple partenaire',push:'Push Campaign',live:'LiveAuctioneers',api:'Widget / API'},
   reasons:{prix:'Trop cher',concurrent:'Prestataire en place',timing:'Pas le bon moment',interet:'Pas intéressé',volume:'Volume trop faible',autre:'Autre'},
-  alerts:{overdue:'en retard',retry:'à relancer',partners:'partenaires',revenue:'CA'},
-  modal:{newTitle:'Nouvelle maison de vente',editTitle:'Modifier la maison de vente',name:'Nom',addr:'Adresse',city:'Ville',state:'État',pipeSep:'Pipeline & intégration',status:'Statut',integ:'Intégration',nextSep:'Prochaine action',due:'Date échéance',refSep:'Détails du refus',reason:'Raison',retry:'Date de relance',refNotes:'Notes refus',contactSep:'Contact principal',cn:'Nom',cp:'Téléphone',save:'Enregistrer',cancel:'Annuler',del:'Supprimer'},
-  csv:{title:'Import CSV revenus',desc:'Format : Owner Name, Final Price — une ligne par commande. Match sur Owner Name.',drop:'Glisser un CSV ici ou cliquer',hint:'Séparateur auto-détecté',close:'Fermer'},
+  alerts:{overdue:'en retard',retry:'à relancer',partners:'partenaires',revenue:'CA',dormant:'dormant'},
+  modal:{newTitle:'Nouvelle maison de vente',editTitle:'Modifier la maison de vente',name:'Nom',addr:'Adresse',city:'Ville',state:'État',web:'Site web',pipeSep:'Pipeline & intégration',status:'Statut',integ:'Intégration',nextSep:'Prochaine action',action:'Action',due:'Date échéance',refSep:'Détails du refus',reason:'Raison',retry:'Date de relance',refNotes:'Notes refus',contactSep:'Contact principal',cn:'Nom',cp:'Téléphone',save:'Enregistrer',cancel:'Annuler',del:'Supprimer'},
+  csv:{title:'Import CSV revenus',desc:'Format : Owner Name, Final Price — une ligne par commande. Match sur Owner Name.',drop:'Glisser un CSV ici ou cliquer',hint:'Séparateur auto-détecté',close:'Fermer',orders:'commandes',matched:'matchés',unmatched:'non matchés',updated:'CA mis à jour'},
   kanban:{empty:'Vide',noPartners:'Aucun partenaire actif',none:'Aucun',readyRetry:'Prêt à relancer'},
-  all:'Tout',ord:'Cmd',rev:'CA'
+  map:{edit:'Modifier',noResults:'Aucun résultat'},
+  list:{noResults:'Aucun résultat'},
+  all:'Tout',ord:'cmd',rev:'CA',perMonth:'/mois',score:'Score'
 }};
 
 let lang='en';
@@ -349,9 +353,9 @@ function renderAlerts(){
   let h='';
   if(ov.length)h+=`<span class="al" style="background:var(--red-bg);color:var(--red)">⚠ ${ov.length} ${L.alerts.overdue}</span>`;
   if(rt)h+=`<span class="al" style="background:var(--amb-bg);color:var(--amb)">↻ ${rt} ${L.alerts.retry}</span>`;
-  if(dormant)h+=`<span class="al" style="background:var(--gry-bg);color:var(--gry)">💤 ${dormant} dormant</span>`;
+  if(dormant)h+=`<span class="al" style="background:var(--gry-bg);color:var(--gry)">💤 ${dormant} ${L.alerts.dormant}</span>`;
   h+=`<span class="al" style="background:var(--grn-bg);color:var(--grn)">${pts.length} ${L.alerts.partners}</span>`;
-  if(rev)h+=`<span class="al" style="background:var(--blu-bg);color:var(--blu)">${L.alerts.revenue}: ${fmt$(rev)}/mo</span>`;
+  if(rev)h+=`<span class="al" style="background:var(--blu-bg);color:var(--blu)">${L.alerts.revenue}: ${fmt$(rev)}${L.perMonth}</span>`;
   el.innerHTML=h;
 }
 
@@ -399,7 +403,7 @@ function kcard(m,bc){
   h+=`<div class="kc-name">${esc(m.name)}</div><div class="kc-loc">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</div>`;
   h+=`<div style="display:flex;align-items:center;gap:4px"><span class="kc-stars">${stars(m.score)}</span>${ibadge(m.integ)}</div>`;
   if(m.action||m.due){h+=`<div class="kc-next"><div class="kc-nl">${L.modal.nextSep}</div>`;if(m.action)h+=`<div class="kc-na">${esc(m.action)}</div>`;if(m.due)h+=`<div class="kc-nd ${o?'od':'ok'}">${o?'⚠ ':''} ${m.due}</div>`;h+=`</div>`;}
-  if(m.status==='partenaire'&&m.revenue)h+=`<div class="kc-rev">${fmt$(m.revenue)}/mo · ${m.orderCount||0} ${L.ord}</div>`;
+  if(m.status==='partenaire'&&m.revenue)h+=`<div class="kc-rev">${fmt$(m.revenue)}${t().perMonth} · ${m.orderCount||0} ${t().ord}</div>`;
   if(m.notes)h+=`<div class="kc-note">${esc(m.notes.slice(0,55))}${m.notes.length>55?'…':''}</div>`;
   h+=`</div>`;return h;
 }
@@ -413,7 +417,7 @@ function renderMap(){
     const leg=L_ctrl({position:'bottomleft'});leg.onAdd=function(){const d=L_DomUtil.create('div');d.style.cssText='background:rgba(255,255,255,.92);backdrop-filter:blur(6px);padding:7px 12px;border-radius:14px;border:1px solid #E8E6E1;font-family:Outfit;font-size:9px;display:flex;gap:10px;color:#57534E';d.innerHTML=Object.entries(MC).map(([k,c])=>`<span style="display:flex;align-items:center;gap:3px"><i style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block"></i>${k}</span>`).join('');return d;};leg.addTo(lmap);}
   markers.forEach(m=>lmap.removeLayer(m));markers=[];
   if(!items.length){lmap.setView([40.75,-73.97],7);return;}
-  items.forEach(m=>{const mk=L_circleMarker([m.lat,m.lng],{radius:Math.max(6,4+(m.score||1)*1.8),fillColor:MC[m.status]||'#78716C',color:'#fff',weight:2,fillOpacity:.85}).addTo(lmap);mk.bindPopup(`<div class="mpop-name">${esc(m.name)}</div><div class="mpop-d"><strong>${L.pipe[m.status]}</strong>${m.integ?' · '+L.integ[m.integ]:''}<br>${stars(m.score)}<br>${m.revenue?fmt$(m.revenue)+'/mo':''}</div><button class="mpop-btn" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">Edit</button>`,{maxWidth:240});mk.bindTooltip(m.name,{direction:'top',offset:[0,-6]});markers.push(mk);});
+  items.forEach(m=>{const mk=L_circleMarker([m.lat,m.lng],{radius:Math.max(6,4+(m.score||1)*1.8),fillColor:MC[m.status]||'#78716C',color:'#fff',weight:2,fillOpacity:.85}).addTo(lmap);mk.bindPopup(`<div class="mpop-name">${esc(m.name)}</div><div class="mpop-d"><strong>${L.pipe[m.status]}</strong>${m.integ?' · '+L.integ[m.integ]:''}<br>${stars(m.score)}<br>${m.revenue?fmt$(m.revenue)+L.perMonth:''}</div><button class="mpop-btn" onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))">${L.map.edit}</button>`,{maxWidth:240});mk.bindTooltip(m.name,{direction:'top',offset:[0,-6]});markers.push(mk);});
   lmap.fitBounds(L_featureGroup(markers).getBounds().pad(.15));setTimeout(()=>lmap.invalidateSize(),100);
 }
 const L_map=L.map,L_tile=L.tileLayer,L_ctrl=L.control,L_DomUtil=L.DomUtil,L_circleMarker=L.circleMarker,L_featureGroup=L.featureGroup;
@@ -421,9 +425,9 @@ const L_map=L.map,L_tile=L.tileLayer,L_ctrl=L.control,L_DomUtil=L.DomUtil,L_circ
 // ═══ LIST ═══
 function renderList(){
   const items=fil().sort((a,b)=>(b.score||0)-(a.score||0)),el=document.getElementById('list-root'),L=t();
-  if(!items.length){el.innerHTML=`<div style="text-align:center;padding:50px;color:var(--t3);font-size:12px">No results</div>`;return;}
-  let h=`<table class="lt"><thead><tr><th>${L.modal.name}</th><th>${L.modal.status}</th><th>${L.modal.integ}</th><th>Score</th><th>${L.modal.nextSep}</th><th>${L.rev}</th></tr></thead><tbody>`;
-  items.forEach(m=>{const o=od(m.due);h+=`<tr onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))"><td><strong>${esc(m.name)}</strong><br><span style="color:var(--t3)">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</span></td><td><span class="kc-badge" style="background:${SCOLS[m.status]?SCOLS[m.status][0]:'var(--gry-bg)'};color:${SCOLS[m.status]?SCOLS[m.status][1]:'var(--gry)'}">${L.pipe[m.status]}</span></td><td style="font-size:10px">${m.integ?L.integ[m.integ]:'—'}</td><td style="color:var(--nv)">${stars(m.score)}</td><td>${m.action?esc(m.action):'—'}${m.due?`<br><span style="font-size:10px;${o?'color:var(--red);font-weight:600':'color:var(--t3)'}">${m.due}</span>`:''}</td><td style="font-family:'JetBrains Mono',monospace">${m.revenue?fmt$(m.revenue)+'/mo':'—'}</td></tr>`;});
+  if(!items.length){el.innerHTML=`<div style="text-align:center;padding:50px;color:var(--t3);font-size:12px">${L.list.noResults}</div>`;return;}
+  let h=`<table class="lt"><thead><tr><th>${L.modal.name}</th><th>${L.modal.status}</th><th>${L.modal.integ}</th><th>${L.score}</th><th>${L.modal.nextSep}</th><th>${L.rev}</th></tr></thead><tbody>`;
+  items.forEach(m=>{const o=od(m.due);h+=`<tr onclick="openMo(mdvs.find(x=>x.id==='${m.id}'))"><td><strong>${esc(m.name)}</strong><br><span style="color:var(--t3)">${esc(m.city||'')}${m.state?', '+esc(m.state):''}</span></td><td><span class="kc-badge" style="background:${SCOLS[m.status]?SCOLS[m.status][0]:'var(--gry-bg)'};color:${SCOLS[m.status]?SCOLS[m.status][1]:'var(--gry)'}">${L.pipe[m.status]}</span></td><td style="font-size:10px">${m.integ?L.integ[m.integ]:'—'}</td><td style="color:var(--nv)">${stars(m.score)}</td><td>${m.action?esc(m.action):'—'}${m.due?`<br><span style="font-size:10px;${o?'color:var(--red);font-weight:600':'color:var(--t3)'}">${m.due}</span>`:''}</td><td style="font-family:'JetBrains Mono',monospace">${m.revenue?fmt$(m.revenue)+L.perMonth:'—'}</td></tr>`;});
   h+=`</tbody></table>`;el.innerHTML=h;
 }
 
@@ -470,12 +474,36 @@ function openMo(m){
 window.openMo=openMo;
 function closeMo(){mo.classList.remove('open');}
 
-document.getElementById('btn-save').addEventListener('click',()=>{
+// Geocode address using Nominatim (free, no API key)
+async function geocode(addr,city,state){
+  if(!addr&&!city)return null;
+  const q=encodeURIComponent([addr,city,state,'USA'].filter(Boolean).join(', '));
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
+    const d=await r.json();
+    if(d&&d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
+}
+
+document.getElementById('btn-save').addEventListener('click',async()=>{
   const name=document.getElementById('f-name').value.trim();
   if(!name){toast(lang==='en'?'Name required':'Nom requis',1);return;}
-  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr:document.getElementById('f-addr').value.trim(),city:document.getElementById('f-city').value.trim(),state:document.getElementById('f-state').value.trim(),web:document.getElementById('f-web').value.trim(),lat:parseFloat(document.getElementById('f-lat').value)||null,lng:parseFloat(document.getElementById('f-lng').value)||null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
+  const addr=document.getElementById('f-addr').value.trim();
+  const city=document.getElementById('f-city').value.trim();
+  const state=document.getElementById('f-state').value.trim();
+  const data={name,score:parseInt(document.getElementById('f-score').value)||3,addr,city,state,web:document.getElementById('f-web').value.trim(),lat:null,lng:null,status:document.getElementById('f-status').value,integ:document.getElementById('f-integ').value,action:document.getElementById('f-action').value.trim(),due:document.getElementById('f-due').value,reason:document.getElementById('f-reason').value,rd:document.getElementById('f-rd').value.trim(),retry:document.getElementById('f-retry').value,contact:{n:document.getElementById('f-cn').value.trim(),e:document.getElementById('f-ce').value.trim(),p:document.getElementById('f-cp').value.trim()},notes:document.getElementById('f-notes').value.trim()};
+  
+  // Geocode if address/city provided
+  const geo=await geocode(addr,city,state);
+  if(geo){data.lat=geo.lat;data.lng=geo.lng;}
+
   const eid=document.getElementById('f-id').value;
-  if(eid){const i=mdvs.findIndex(m=>m.id===eid);if(i>-1)mdvs[i]={...mdvs[i],...data};toast(lang==='en'?'Updated':'Modifié');}
+  if(eid){const i=mdvs.findIndex(m=>m.id===eid);if(i>-1){
+    // Keep existing coords if geocoding failed and coords already exist
+    if(!data.lat&&mdvs[i].lat){data.lat=mdvs[i].lat;data.lng=mdvs[i].lng;}
+    mdvs[i]={...mdvs[i],...data};
+  }toast(lang==='en'?'Updated':'Modifié');}
   else{mdvs.push({id:u(),...data,revenue:0,lastOrder:'',orderCount:0});toast(lang==='en'?'Added':'Ajouté');}
   sv();renderAll();closeMo();
 });
@@ -518,11 +546,11 @@ function processCSV(file){
       if(mdv){mdv.revenue=Math.round(data.revenue);mdv.orderCount=data.orders;mdv.lastOrder=td();matched++;}else{unm.push(owner);}
     });
     sv();renderAll();
-    const resEl=document.getElementById('csv-res');
-    let msg=`✓ ${parsed} orders → ${matched} matched`;
-    if(unm.length)msg+=`<br><span style="color:var(--amb)">⚠ ${unm.length} unmatched: ${unm.slice(0,4).join(', ')}${unm.length>4?'…':''}</span>`;
+    const resEl=document.getElementById('csv-res');const CL=t().csv;
+    let msg=`✓ ${parsed} ${CL.orders} → ${matched} ${CL.matched}`;
+    if(unm.length)msg+=`<br><span style="color:var(--amb)">⚠ ${unm.length} ${CL.unmatched}: ${unm.slice(0,4).join(', ')}${unm.length>4?'…':''}</span>`;
     resEl.innerHTML=msg;resEl.style.display='block';
-    toast((lang==='en'?'Revenue updated — ':'CA mis à jour — ')+matched+' MDVs');
+    toast(CL.updated+' — '+matched+' MDVs');
   };reader.readAsText(file);
 }
 
