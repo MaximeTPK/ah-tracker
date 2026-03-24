@@ -486,15 +486,14 @@ function openMo(m){
 window.openMo=openMo;
 function closeMo(){mo.classList.remove('open');}
 
-// Geocode — Google API (set key via environment)
-const GOOGLE_GEOCODE_KEY = '';
+// Geocode — via Vercel proxy (API key hidden server-side)
 async function geocode(addr,city,state){
-  if(!GOOGLE_GEOCODE_KEY||(!addr&&!city))return null;
+  if(!addr&&!city)return null;
   const parts=[addr,city,state,'USA'].filter(Boolean).join(', ');
   try{
-    const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(parts)}&key=${GOOGLE_GEOCODE_KEY}`);
+    const r=await fetch(`/api/geocode?address=${encodeURIComponent(parts)}`);
     const d=await r.json();
-    if(d.status==='OK'&&d.results&&d.results[0]){const loc=d.results[0].geometry.location;return{lat:loc.lat,lng:loc.lng};}
+    if(d.lat&&d.lng)return{lat:d.lat,lng:d.lng};
   }catch(e){}
   return null;
 }
@@ -575,19 +574,31 @@ document.getElementById('sb-exp').addEventListener('click',()=>{
 });
 document.getElementById('json-imp').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);
+  const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);
     if(d.mdvs&&Array.isArray(d.mdvs)){
-      // Merge: add new MDVs, skip existing (match by name lowercase)
       const existingNames=new Set(mdvs.map(m=>m.name.toLowerCase()));
-      let added=0,skipped=0;
-      d.mdvs.forEach(m=>{
-        if(existingNames.has(m.name.toLowerCase())){skipped++;}
-        else{mdvs.push(m);existingNames.add(m.name.toLowerCase());added++;}
-      });
+      const newOnes=d.mdvs.filter(m=>!existingNames.has(m.name.toLowerCase()));
+      const skipped=d.mdvs.length-newOnes.length;
+
+      // Add all immediately (with existing coords)
+      newOnes.forEach(m=>{mdvs.push(m);existingNames.add(m.name.toLowerCase());});
       sv();renderAll();
-      toast((lang==='en'?`Merged: ${added} added, ${skipped} skipped (duplicates)`:`Fusion : ${added} ajoutés, ${skipped} ignorés (doublons)`));
+      toast((lang==='en'?`Imported ${newOnes.length}, geocoding...`:`Importé ${newOnes.length}, géocodage...`));
+
+      // Geocode in background
+      let geocoded=0;
+      for(let i=0;i<newOnes.length;i++){
+        const m=newOnes[i];
+        if(m.lat&&m.lng&&m.lat>10&&m.lat<60)continue; // skip if already has valid US coords
+        const geo=await geocode(m.addr||'',m.city||'',m.state||'');
+        if(geo){m.lat=geo.lat;m.lng=geo.lng;geocoded++;}
+        // Update progress every 50
+        if(i%50===0&&i>0){sv();renderAll();toast((lang==='en'?`Geocoding... ${i}/${newOnes.length}`:`Géocodage... ${i}/${newOnes.length}`));}
+      }
+      sv();renderAll();
+      toast((lang==='en'?`Done: ${newOnes.length} added, ${geocoded} geocoded, ${skipped} skipped`:`Terminé : ${newOnes.length} ajoutés, ${geocoded} géocodés, ${skipped} ignorés`));
     }else toast('Invalid',1);
-  }catch{toast('Invalid',1);}e.target.value='';};r.readAsText(f);
+  }catch(err){console.error(err);toast('Invalid',1);}e.target.value='';};r.readAsText(f);
 });
 
 // ═══ TOAST + KB ═══
