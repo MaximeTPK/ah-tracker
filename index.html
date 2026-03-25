@@ -42,6 +42,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .rp-slider label{font-size:10px;color:#78716C}
 .rp-slider input{flex:1}
 .rp-slider span{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;min-width:52px;text-align:right;flex-shrink:0}
+.rp-heat-legend{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:8px;color:#78716C}.rp-heat-bar{width:60px;height:5px;border-radius:3px;background:linear-gradient(90deg,#42A5F5,#EF5350)}
 .rp-add{margin-top:8px;width:100%;font-family:'Outfit',sans-serif;font-size:10px;padding:5px 0;border-radius:6px;border:1.5px dashed #D4D1CA;background:transparent;color:#78716C;cursor:pointer;text-align:center}
 .rp-add:hover{border-color:#0A1A2F;color:#0A1A2F}
 @media(max-width:900px){.kan{grid-template-columns:1fr 1fr}}@media(max-width:640px){.kan{grid-template-columns:1fr}.topbar,.alerts,.tb,.vpan{padding-left:12px;padding-right:12px}.sb{width:44px}.geo-drop{min-width:300px;right:0;left:auto}}
@@ -193,6 +194,7 @@ let rmap=null,rCircles=[],rMarkers=[],rClickMode=false;
 
 let rHubs=[...DEFAULT_HUBS.map(h=>({...h}))];
 let rRadius=60;
+let rHeatmap=false;
 
 function haversine(lat1,lon1,lat2,lon2){const R=3959,dLat=Math.PI/180*(lat2-lat1),dLon=Math.PI/180*(lon2-lon1),a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.asin(Math.sqrt(a));}
 
@@ -231,9 +233,23 @@ function renderRadius(){
 
   items.forEach(m=>{
     const isCov=coveredSet.has(m.id||m.name);
-    const color=isCov?'#166534':'#B91C1C';
-    const mk=L.circleMarker([m.lat,m.lng],{radius:4,fillColor:color,color:'#fff',weight:1,fillOpacity:isCov?0.7:0.3}).addTo(rmap);
-    mk.bindTooltip(m.name,{direction:'top',offset:[0,-4]});
+    let color,radius,opacity;
+    if(rHeatmap){
+      const sales=m.salesLastYear||0;
+      const t=Math.min(sales/100,1);
+      const r=Math.round(66+t*(239-66));
+      const g=Math.round(165+t*(83-165));
+      const b=Math.round(245+t*(80-245));
+      color='rgb('+r+','+g+','+b+')';
+      radius=Math.max(3,Math.min(14,3+t*11));
+      opacity=0.5+t*0.4;
+    }else{
+      color=isCov?'#166534':'#B91C1C';
+      radius=4;
+      opacity=isCov?0.7:0.3;
+    }
+    const mk=L.circleMarker([m.lat,m.lng],{radius:radius,fillColor:color,color:rHeatmap?'rgba(255,255,255,0.4)':'#fff',weight:rHeatmap?0.5:1,fillOpacity:opacity}).addTo(rmap);
+    mk.bindTooltip(m.name+(m.salesLastYear?' ('+m.salesLastYear+' sales/yr)':''),{direction:'top',offset:[0,-4]});
     rMarkers.push(mk);
   });
 
@@ -248,11 +264,13 @@ function renderRadius(){
   ph+='<button class="rp-add" id="rp-add-btn">'+(lang==='en'?'+ click map to add hub':'+ cliquer carte pour ajouter')+'</button>';
   ph+='<div class="rp-total"><span>'+(lang==='en'?'Covered':'Couvert')+'</span><span class="c g">'+coveredSet.size+' / '+items.length+'</span></div>';
   ph+='<div class="rp-total"><span>'+(lang==='en'?'Uncovered':'Hors zone')+'</span><span class="c r">'+(items.length-coveredSet.size)+'</span></div>';
-  ph+='<div class="rp-slider"><label>Radius</label><input type="range" min="20" max="200" value="'+rRadius+'" step="5" id="r-slider"><span id="r-val">'+rRadius+' mi</span></div>';
+  ph+='<div class="rp-slider" style="border-top:none;padding-top:0"><label>Hotspots</label><div style="flex:1"></div><button id="r-heat" style="font-family:Outfit,sans-serif;font-size:9px;padding:3px 10px;border-radius:10px;border:1px solid '+(rHeatmap?'#B91C1C':'#E8E6E1')+';background:'+(rHeatmap?'#FCEBEB':'transparent')+';color:'+(rHeatmap?'#B91C1C':'#78716C')+';cursor:pointer">'+(rHeatmap?(lang==='en'?'ON':'ON'):(lang==='en'?'OFF':'OFF'))+'</button></div>';
+ph+='<div class="rp-slider"><label>Radius</label><input type="range" min="20" max="200" value="'+rRadius+'" step="5" id="r-slider"><span id="r-val">'+rRadius+' mi</span></div>';
 
   document.getElementById('rpanel').innerHTML=ph;
 
   document.getElementById('r-slider').addEventListener('input',function(e){rRadius=parseInt(e.target.value);document.getElementById('r-val').textContent=rRadius+' mi';renderRadius();});
+document.getElementById('r-heat').addEventListener('click',function(){rHeatmap=!rHeatmap;renderRadius();});
   document.querySelectorAll('.rp-hub .x').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();const hi=parseInt(this.dataset.hi);rHubs.splice(hi,1);renderRadius();}));
 }
 
