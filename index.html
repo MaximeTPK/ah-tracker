@@ -407,11 +407,28 @@ function renderRadius(){
   ph+='<div class="rp-total"><span>'+(lang==='en'?'Uncovered':'Hors zone')+'</span><span class="c r">'+(items.length-coveredSet.size)+'</span></div>';
   ph+='<div class="rp-slider" style="border-top:none;padding-top:0"><label>Hotspots</label><div style="flex:1"></div><button id="r-heat" style="font-family:Outfit,sans-serif;font-size:9px;padding:3px 10px;border-radius:10px;border:1px solid '+(rHeatmap?'#B91C1C':'#E8E6E1')+';background:'+(rHeatmap?'#FCEBEB':'transparent')+';color:'+(rHeatmap?'#B91C1C':'#78716C')+';cursor:pointer">'+(rHeatmap?(lang==='en'?'ON':'ON'):(lang==='en'?'OFF':'OFF'))+'</button></div>';
 ph+='<div class="rp-slider"><label>Radius</label><input type="range" min="20" max="200" value="'+rRadius+'" step="5" id="r-slider"><span id="r-val">'+rRadius+' mi</span></div>';
+ph+='<button id="r-export" style="margin-top:8px;width:100%;font-family:Outfit,sans-serif;font-size:10px;font-weight:600;padding:6px 0;border-radius:6px;border:1px solid var(--nv);background:var(--nv);color:#fff;cursor:pointer">'+(lang==='en'?'Export zones CSV':'Exporter zones CSV')+'</button>';
 
   document.getElementById('rpanel').innerHTML=ph;
 
   document.getElementById('r-slider').addEventListener('input',function(e){rRadius=parseInt(e.target.value);document.getElementById('r-val').textContent=rRadius+' mi';renderRadius();});
 document.getElementById('r-heat').addEventListener('click',function(){rHeatmap=!rHeatmap;renderRadius();});
+document.getElementById('r-export').addEventListener('click',function(){
+const items=mdvs.filter(m=>m.lat&&m.lng);
+const rows=[['Name','City','State','Address','Status','Integration','Score','Sales Last Year','Hub','Distance (mi)','Notes'].join(',')];
+items.forEach(m=>{
+  let nearestHub='',nearestDist=Infinity;
+  rHubs.forEach(h=>{
+    const d=haversine(h.lat,h.lng,m.lat,m.lng);
+    if(d<=rRadius&&d<nearestDist){nearestHub=h.name;nearestDist=d;}
+  });
+  const q=v=>'"'+(v||'').replace(/"/g,'""')+'"';
+  rows.push([q(m.name),q(m.city),q(m.state),q(m.addr),q(m.status),q(m.integ),m.score||1,m.salesLastYear||'',q(nearestHub),nearestHub?Math.round(nearestDist):'',q(m.notes)].join(','));
+});
+const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='zones-'+rRadius+'mi-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+toast((lang==='en'?'Exported ':'Exporté ')+items.length+' MDVs');
+});
   document.querySelectorAll('.rp-hub .x').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();const hi=parseInt(this.dataset.hi);rHubs.splice(hi,1);renderRadius();}));
 }
 
