@@ -377,12 +377,12 @@ function renderRadius(){
     let color,radius,opacity;
     if(rHeatmap){
       const sales=m.salesLastYear||0;
-      const t=Math.min(sales/100,1);
+      const t=sales<=0?0:Math.min(Math.log(sales+1)/Math.log(101),1);
       const r=Math.round(66+t*(239-66));
       const g=Math.round(165+t*(83-165));
       const b=Math.round(245+t*(80-245));
       color='rgb('+r+','+g+','+b+')';
-      radius=Math.max(3,Math.min(14,3+t*11));
+      radius=Math.max(4,Math.min(16,4+t*12));
       opacity=0.5+t*0.4;
     }else{
       color=isCov?'#166534':'#B91C1C';
